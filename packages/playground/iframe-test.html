@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockSuite iframe 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        .editor-panel {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .data-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: auto;
+        }
+        .data-panel h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 10px;
+        }
+        .json-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            overflow: auto;
+            max-height: 400px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .controls button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        .controls button:hover {
+            background: #005a9e;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .iframe-container {
+            height: 100%;
+            border: none;
+        }
+        .blocksuite-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .log-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007acc;
+            background: #f8f9fa;
+        }
+        .log-time {
+            color: #666;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-panel">
+            <iframe 
+                id="blocksuite-iframe" 
+                class="blocksuite-iframe"
+                src="./index.html"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
+            </iframe>
+        </div>
+        
+        <div class="data-panel">
+            <div id="status" class="status disconnected">연결 대기 중...</div>
+            
+            <div class="controls">
+                <button onclick="requestDocument()">문서 요청</button>
+                <button onclick="clearLogs()">로그 지우기</button>
+                <button onclick="toggleAutoUpdate()">자동 업데이트 토글</button>
+            </div>
+            
+            <h3>실시간 JSON 데이터</h3>
+            <div id="json-output" class="json-output">JSON 데이터가 여기에 표시됩니다...</div>
+            
+            <h3>통신 로그</h3>
+            <div id="log-output" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                로그가 여기에 표시됩니다...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isConnected = false;
+        let autoUpdate = true;
+        let lastJsonData = null;
+
+        const statusEl = document.getElementById('status');
+        const jsonOutputEl = document.getElementById('json-output');
+        const logOutputEl = document.getElementById('log-output');
+
+        function updateStatus(connected) {
+            isConnected = connected;
+            statusEl.className = `status ${connected ? 'connected' : 'disconnected'}`;
+            statusEl.textContent = connected ? 'BlockSuite와 연결됨' : '연결 대기 중...';
+        }
+
+        function addLog(message, data = null) {
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            
+            const time = new Date().toLocaleTimeString('ko-KR');
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'log-time';
+            timeSpan.textContent = time;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = message;
+            
+            logItem.appendChild(timeSpan);
+            logItem.appendChild(messageDiv);
+            
+            if (data) {
+                const dataDiv = document.createElement('div');
+                dataDiv.style.fontSize = '11px';
+                dataDiv.style.color = '#666';
+                dataDiv.style.marginTop = '5px';
+                dataDiv.textContent = JSON.stringify(data, null, 2).substring(0, 200) + '...';
+                logItem.appendChild(dataDiv);
+            }
+            
+            logOutputEl.insertBefore(logItem, logOutputEl.firstChild);
+            
+            // 로그가 너무 많아지지 않도록 제한
+            const logs = logOutputEl.getElementsByClassName('log-item');
+            if (logs.length > 20) {
+                logOutputEl.removeChild(logs[logs.length - 1]);
+            }
+        }
+
+        function updateJsonDisplay(data) {
+            if (data && autoUpdate) {
+                lastJsonData = data;
+                jsonOutputEl.textContent = JSON.stringify(data, null, 2);
+            }
+        }
+
+        function requestDocument() {
+            const iframe = document.getElementById('blocksuite-iframe');
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'getDocument'
+                }, '*');
+                addLog('문서 데이터 요청 전송');
+            }
+        }
+
+        function clearLogs() {
+            logOutputEl.innerHTML = '로그가 여기에 표시됩니다...';
+        }
+
+        function toggleAutoUpdate() {
+            autoUpdate = !autoUpdate;
+            const button = event.target;
+            button.textContent = autoUpdate ? '자동 업데이트 토글' : '자동 업데이트 (비활성화)';
+            button.style.background = autoUpdate ? '#007acc' : '#6c757d';
+            addLog(`자동 업데이트 ${autoUpdate ? '활성화' : '비활성화'}`);
+        }
+
+        // iframe으로부터 메시지 수신
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.source === 'blocksuite-iframe') {
+                if (!isConnected) {
+                    updateStatus(true);
+                    addLog('BlockSuite iframe과 연결 성공');
+                }
+
+                const { type, data } = event.data;
+                
+                switch (type) {
+                    case 'documentLoaded':
+                        addLog('문서 로드 완료', data);
+                        updateJsonDisplay(data);
+                        break;
+                    
+                    case 'documentUpdated':
+                        addLog('문서 업데이트됨');
+                        updateJsonDisplay(data);
+                        break;
+                    
+                    case 'documentData':
+                        addLog('문서 데이터 수신', data);
+                        updateJsonDisplay(data);
+                        break;
+                    
+                    default:
+                        addLog(`알 수 없는 메시지 타입: ${type}`, data);
+                }
+            }
+        });
+
+        // iframe 로드 감지
+        document.getElementById('blocksuite-iframe').addEventListener('load', () => {
+            addLog('iframe 로드 완료');
+            // 잠시 후 문서 요청
+            setTimeout(() => {
+                requestDocument();
+            }, 2000);
+        });
+
+        // 페이지 로드 시 초기화
+        addLog('부모 페이지 로드 완료');
+    </script>
+</body>
+</html> 

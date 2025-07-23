@@ -100,6 +100,7 @@ export default defineConfig(({ mode }) => {
         input: {
           main: resolve(__dirname, 'index.html'),
           'examples/inline': resolve(__dirname, 'examples/inline/index.html'),
+          'iframe-test': resolve(__dirname, 'iframe-test.html'),
         },
         treeshake: true,
         output: {

@@ -16,7 +16,7 @@ import {
 } from './paragraph-keymap.js';
 
 const placeholders = {
-  text: "Type '/' for commands",
+  text: "/ 키를 눌러 옵션 선택",
   h1: 'Heading 1',
   h2: 'Heading 2',
   h3: 'Heading 3',
