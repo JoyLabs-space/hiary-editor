@@ -18,6 +18,7 @@ import { Superscript } from "@tiptap/extension-superscript"
 import { Subscript } from "@tiptap/extension-subscript"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Mathematics } from "@tiptap/extension-mathematics"
+import { Ai } from "@tiptap-pro/extension-ai"
 import { UniqueID } from "@tiptap/extension-unique-id"
 import { Emoji, gitHubEmojis } from "@tiptap/extension-emoji"
 
@@ -55,6 +56,7 @@ import { AiProvider, useAi } from "@/contexts/ai-context"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import { TIPTAP_AI_APP_ID } from "@/lib/tiptap-collab-utils"
 import Paragraph from '@tiptap/extension-paragraph'
 import { CodeBlockLanguageDropdown } from "@/components/tiptap-ui/code-block-language-dropdown/CodeBlockLanguageDropdown"
 import { TableKit } from '@tiptap/extension-table'
@@ -64,6 +66,7 @@ import "@/components/tiptap-templates/notion-like/notion-like-editor.scss"
 import "@/components/tiptap-ui/paste-modal/paste-modal.scss";
 
 // --- Content ---
+import { NotionEditorHeader } from "@/components/tiptap-templates/notion-like/notion-like-editor-header"
 import { MobileToolbar } from "@/components/tiptap-templates/notion-like/notion-like-editor-mobile-toolbar"
 import { NotionToolbarFloating } from "@/components/tiptap-templates/notion-like/notion-like-editor-toolbar-floating"
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
@@ -205,9 +208,8 @@ export function EditorContentArea() {
       aiGenerationIsSelection &&
       aiGenerationHasMessage
     ) {
+      editor.chain().focus().aiAccept().run()
       editor.commands.resetUiState()
-      editor.commands.setCodeBlock()
-      editor.commands.toggleCodeBlock()
     }
   }, [
     aiGenerationHasMessage,
@@ -461,7 +463,31 @@ export function EditorProvider(props: EditorProviderProps) {
 
   // No collaboration extensions for standalone mode
 
-  // AI extension removed for standalone mode
+  // Add AI extension only if token is available
+  if (aiToken) {
+    extensions.push(
+      Ai.configure({
+        appId: TIPTAP_AI_APP_ID,
+        token: aiToken,
+        autocompletion: false,
+        showDecorations: true,
+        hideDecorationsOnStreamEnd: false,
+        onLoading: (context) => {
+          context.editor.commands.aiGenerationSetIsLoading(true)
+          context.editor.commands.aiGenerationHasMessage(false)
+        },
+        onChunk: (context) => {
+          context.editor.commands.aiGenerationSetIsLoading(true)
+          context.editor.commands.aiGenerationHasMessage(true)
+        },
+        onSuccess: (context) => {
+          const hasMessage = !!context.response
+          context.editor.commands.aiGenerationSetIsLoading(false)
+          context.editor.commands.aiGenerationHasMessage(hasMessage)
+        },
+      })
+    )
+  }
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -481,6 +507,7 @@ export function EditorProvider(props: EditorProviderProps) {
   return (
     <div className="notion-like-editor-wrapper">
       <EditorContext.Provider value={{ editor }}>
+        <NotionEditorHeader />
         <EditorContentArea />
       </EditorContext.Provider>
     </div>
@@ -514,10 +541,16 @@ export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
   const { provider, ydoc, hasCollab } = useCollab()
   const { aiToken, hasAi } = useAi()
 
+  console.log('DEBUG - hasCollab:', hasCollab, 'provider:', !!provider)
+  console.log('DEBUG - hasAi:', hasAi, 'aiToken:', !!aiToken)
+
   // Show loading only if collab or AI features are enabled but tokens are still loading
   if ((hasCollab && !provider) || (hasAi && !aiToken)) {
+    console.log('DEBUG - Showing LoadingSpinner')
     return <LoadingSpinner />
   }
+
+  console.log('DEBUG - Rendering EditorProvider')
 
   return (
     <EditorProvider

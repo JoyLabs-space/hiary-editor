@@ -116,6 +116,8 @@ export function NotionToolbarFloating() {
           />
           <ColorTextPopover hideWhenUnavailable={true} />
           <TableActionsDropdown editor={editor} />
+          <MathematicsButton type="inline" hideWhenUnavailable={true} />
+          <MathematicsButton type="block" hideWhenUnavailable={true} />
         </ToolbarGroup>
 
         <MoreOptions hideWhenUnavailable={true} />

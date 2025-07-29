@@ -1,45 +1,41 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.DS_Store
+.idea
+.vscode/*
+.zed
+!.vscode/tasks.json
+!.vscode/settings.template.json
+!.vscode/launch.template.json
+!.vscode/extensions.json
+node_modules
+*.tgz
 
-# dependencies
-/node_modules
-/.pnp
+# playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# code coverage
+.nyc_output
+.coverage
+
+# Build out
+dist/
+build
+temp
+tsconfig.tsbuildinfo
+tsconfig.*.tsbuildinfo
+.next
+next-env.d.ts
+
+# Cache
+.eslintcache
+
+__screenshots__/
+
+
 .pnp.*
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-
-# Authentication tokens
-.npmrc
