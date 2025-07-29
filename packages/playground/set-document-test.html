@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlockSuite SetDocument 테스트 (doc.load() 사용)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+            border-radius: 6px;
+        }
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .json-input {
+            width: 100%;
+            height: 200px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .preset-buttons button {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: #28a745;
+        }
+        .preset-buttons button:hover {
+            background: #1e7e34;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .log-item {
+            margin: 2px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-info { color: #007acc; }
+        .feature-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 BlockSuite SetDocument 기능 테스트 <span class="feature-badge">doc.load() 사용</span></h1>
+    <p>왼쪽에서 JSON 데이터를 입력하고 "문서 설정" 버튼을 클릭하면 오른쪽 에디터에 반영됩니다. <strong>doc.load()</strong> 함수를 사용하여 안전하게 문서를 생성합니다.</p>
+    
+    <div class="container">
+        <!-- 컨트롤 패널 -->
+        <div class="panel">
+            <h2>📝 문서 설정 컨트롤</h2>
+            
+            <div id="status" class="status disconnected">연결 대기 중...</div>
+            
+            <div class="control-panel">
+                <h3>🎛️ 빠른 설정</h3>
+                <div class="preset-buttons">
+                    <button onclick="loadPreset('simple')">간단한 텍스트</button>
+                    <button onclick="loadPreset('multiple')">여러 단락</button>
+                    <button onclick="loadPreset('with-title')">제목 포함</button>
+                    <button onclick="loadPreset('empty')">빈 문서</button>
+                    <button onclick="loadPreset('user-data')">사용자 데이터</button>
+                </div>
+                
+                <h3>📄 JSON 데이터 입력</h3>
+                <textarea id="jsonInput" class="json-input" placeholder="BlockSuite JSON 스냅샷을 여기에 입력하세요..."></textarea>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="setDocument()" id="setBtn" disabled>📤 문서 설정</button>
+                    <button onclick="getDocument()">📥 현재 문서 가져오기</button>
+                    <button onclick="clearLog()">🗑️ 로그 지우기</button>
+                </div>
+                
+                <h3>📋 통신 로그</h3>
+                <div id="log" class="log">
+                    로그가 여기에 표시됩니다...
+                </div>
+            </div>
+        </div>
+        
+        <!-- BlockSuite 에디터 -->
+        <div class="panel">
+            <h2>📖 BlockSuite 에디터</h2>
+            <iframe 
+                id="blocksuiteIframe"
+                src="./index.html"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
+            </iframe>
+        </div>
+    </div>
+
+    <script>
+        let isConnected = false
+        
+        // 상태 업데이트
+        function updateStatus(connected) {
+            isConnected = connected
+            const statusEl = document.getElementById('status')
+            const setBtn = document.getElementById('setBtn')
+            
+            statusEl.className = `status ${connected ? 'connected' : 'disconnected'}`
+            statusEl.textContent = connected ? '✅ BlockSuite와 연결됨' : '❌ 연결 대기 중...'
+            setBtn.disabled = !connected
+        }
+        
+        // 로그 추가
+        function addLog(message, type = 'info') {
+            const logEl = document.getElementById('log')
+            const logItem = document.createElement('div')
+            logItem.className = `log-item log-${type}`
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`
+            logEl.appendChild(logItem)
+            logEl.scrollTop = logEl.scrollHeight
+        }
+        
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('log').innerHTML = '로그가 지워졌습니다...'
+        }
+        
+        // 프리셋 로드
+        function loadPreset(type) {
+            const jsonInput = document.getElementById('jsonInput')
+            let preset = ''
+            
+            switch (type) {
+                case 'simple':
+                    preset = JSON.stringify({
+                        type: 'page',
+                        meta: { id: 'doc:home', title: '간단한 예시', createDate: Date.now(), tags: [] },
+                        blocks: {
+                            type: 'block',
+                            id: 'page-root',
+                            flavour: 'affine:page',
+                            props: {
+                                title: {
+                                    '$blocksuite:internal:text$': true,
+                                    delta: [{ insert: '안녕하세요!' }]
+                                }
+                            },
+                            children: [{
+                                type: 'block',
+                                id: 'note-1',
+                                flavour: 'affine:note',
+                                props: {},
+                                children: [{
+                                    type: 'block',
+                                    id: 'para-1',
+                                    flavour: 'affine:paragraph',
+                                    props: {
+                                        text: {
+                                            '$blocksuite:internal:text$': true,
+                                            delta: [{ insert: '이것은 간단한 텍스트 예시입니다.' }]
+                                        }
+                                    },
+                                    children: []
+                                }]
+                            }]
+                        }
+                    }, null, 2)
+                    break
+                    
+                case 'multiple':
+                    preset = JSON.stringify({
+                        type: 'page',
+                        meta: { id: 'doc:home', title: '여러 단락', createDate: Date.now(), tags: [] },
+                        blocks: {
+                            type: 'block',
+                            id: 'page-root',
+                            flavour: 'affine:page',
+                            props: {
+                                title: {
+                                    '$blocksuite:internal:text$': true,
+                                    delta: [{ insert: '여러 단락 문서' }]
+                                }
+                            },
+                            children: [{
+                                type: 'block',
+                                id: 'note-1',
+                                flavour: 'affine:note',
+                                props: {},
+                                children: [
+                                    {
+                                        type: 'block',
+                                        id: 'para-1',
+                                        flavour: 'affine:paragraph',
+                                        props: {
+                                            text: {
+                                                '$blocksuite:internal:text$': true,
+                                                delta: [{ insert: '첫 번째 단락입니다.' }]
+                                            }
+                                        },
+                                        children: []
+                                    },
+                                    {
+                                        type: 'block',
+                                        id: 'para-2',
+                                        flavour: 'affine:paragraph',
+                                        props: {
+                                            text: {
+                                                '$blocksuite:internal:text$': true,
+                                                delta: [{ insert: '두 번째 단락입니다.' }]
+                                            }
+                                        },
+                                        children: []
+                                    },
+                                    {
+                                        type: 'block',
+                                        id: 'para-3',
+                                        flavour: 'affine:paragraph',
+                                        props: {
+                                            text: {
+                                                '$blocksuite:internal:text$': true,
+                                                delta: [{ insert: '세 번째 단락입니다.' }]
+                                            }
+                                        },
+                                        children: []
+                                    }
+                                ]
+                            }]
+                        }
+                    }, null, 2)
+                    break
+                    
+                case 'with-title':
+                    preset = JSON.stringify({
+                        type: 'page',
+                        meta: { id: 'doc:home', title: '제목 있는 문서', createDate: Date.now(), tags: [] },
+                        blocks: {
+                            type: 'block',
+                            id: 'page-root',
+                            flavour: 'affine:page',
+                            props: {
+                                title: {
+                                    '$blocksuite:internal:text$': true,
+                                    delta: [{ insert: '멋진 제목입니다' }]
+                                }
+                            },
+                            children: [{
+                                type: 'block',
+                                id: 'note-1',
+                                flavour: 'affine:note',
+                                props: {},
+                                children: [{
+                                    type: 'block',
+                                    id: 'para-1',
+                                    flavour: 'affine:paragraph',
+                                    props: {
+                                        text: {
+                                            '$blocksuite:internal:text$': true,
+                                            delta: [{ insert: '제목이 있는 문서의 내용입니다.' }]
+                                        }
+                                    },
+                                    children: []
+                                }]
+                            }]
+                        }
+                    }, null, 2)
+                    break
+                    
+                case 'empty':
+                    preset = JSON.stringify({
+                        type: 'page',
+                        meta: { id: 'doc:home', title: '', createDate: Date.now(), tags: [] },
+                        blocks: {
+                            type: 'block',
+                            id: 'page-root',
+                            flavour: 'affine:page',
+                            props: {
+                                title: {
+                                    '$blocksuite:internal:text$': true,
+                                    delta: []
+                                }
+                            },
+                            children: [{
+                                type: 'block',
+                                id: 'note-1',
+                                flavour: 'affine:note',
+                                props: {},
+                                children: []
+                            }]
+                        }
+                    }, null, 2)
+                    break
+                    
+                case 'user-data':
+                    preset = JSON.stringify({
+                        type: 'page',
+                        meta: {
+                            id: 'doc:home',
+                            title: 'asdf',
+                            createDate: 1753425776082,
+                            tags: []
+                        },
+                        blocks: {
+                            type: 'block',
+                            id: 'vCGvjEi1O3',
+                            flavour: 'affine:page',
+                            version: 2,
+                            props: {
+                                title: {
+                                    '$blocksuite:internal:text$': true,
+                                    delta: [{ insert: 'asdf' }]
+                                }
+                            },
+                            children: [
+                                {
+                                    type: 'block',
+                                    id: 'IA6Z6kmPtm',
+                                    flavour: 'affine:surface',
+                                    version: 5,
+                                    props: { elements: {} },
+                                    children: []
+                                },
+                                {
+                                    type: 'block',
+                                    id: '-ZNGy9fbp8',
+                                    flavour: 'affine:note',
+                                    version: 1,
+                                    props: {
+                                        xywh: '[0, 100, 800, 640]',
+                                        background: { dark: '#252525', light: '#ffffff' },
+                                        index: 'a0',
+                                        lockedBySelf: false,
+                                        hidden: false,
+                                        displayMode: 'both',
+                                        edgeless: {
+                                            style: {
+                                                borderRadius: 8,
+                                                borderSize: 4,
+                                                borderStyle: 'none',
+                                                shadowType: '--affine-note-shadow-box'
+                                            }
+                                        }
+                                    },
+                                    children: [
+                                        {
+                                            type: 'block',
+                                            id: 'szWLPXF7PN',
+                                            flavour: 'affine:paragraph',
+                                            version: 1,
+                                            props: {
+                                                type: 'text',
+                                                text: {
+                                                    '$blocksuite:internal:text$': true,
+                                                    delta: [{ insert: 'asfdasfd' }]
+                                                },
+                                                collapsed: false
+                                            },
+                                            children: []
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }, null, 2)
+                    break
+            }
+            
+            jsonInput.value = preset
+            addLog(`프리셋 로드됨: ${type}`, 'info')
+        }
+        
+        // 문서 설정
+        function setDocument() {
+            const jsonInput = document.getElementById('jsonInput')
+            const jsonText = jsonInput.value.trim()
+            
+            if (!jsonText) {
+                addLog('JSON 데이터를 입력해주세요', 'error')
+                return
+            }
+            
+            try {
+                const jsonData = JSON.parse(jsonText)
+                
+                const iframe = document.getElementById('blocksuiteIframe')
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                        type: 'setDocument',
+                        data: jsonData
+                    }, '*')
+                    
+                    addLog('문서 설정 요청 전송됨 (doc.load() 사용)', 'info')
+                } else {
+                    addLog('iframe을 찾을 수 없습니다', 'error')
+                }
+                
+            } catch (error) {
+                addLog(`JSON 파싱 오류: ${error.message}`, 'error')
+            }
+        }
+        
+        // 현재 문서 가져오기
+        function getDocument() {
+            const iframe = document.getElementById('blocksuiteIframe')
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'getDocument'
+                }, '*')
+                
+                addLog('현재 문서 요청 전송됨', 'info')
+            }
+        }
+        
+        // 메시지 이벤트 리스너
+        window.addEventListener('message', (event) => {
+            if (!event.data || event.data.source !== 'blocksuite-iframe') return
+            
+            if (!isConnected) {
+                updateStatus(true)
+                addLog('BlockSuite와 연결됨', 'success')
+            }
+            
+            const { type, data } = event.data
+            
+            switch (type) {
+                case 'documentSetSuccess':
+                    addLog('✅ 문서 설정 성공: ' + data.message, 'success')
+                    break
+                    
+                case 'documentSetError':
+                    addLog('❌ 문서 설정 실패: ' + data.error, 'error')
+                    break
+                    
+                case 'documentData':
+                    addLog('📥 현재 문서 데이터 수신됨', 'info')
+                    document.getElementById('jsonInput').value = JSON.stringify(data, null, 2)
+                    break
+                    
+                case 'documentLoaded':
+                    addLog('📄 문서 로드 완료', 'info')
+                    break
+                    
+                case 'documentUpdated':
+                    addLog('✏️ 문서 업데이트됨', 'info')
+                    break
+                    
+                default:
+                    addLog(`❓ 알 수 없는 메시지: ${type}`, 'info')
+            }
+        })
+        
+        // iframe 로드 이벤트
+        document.getElementById('blocksuiteIframe').addEventListener('load', () => {
+            addLog('iframe 로드 완료', 'info')
+        })
+        
+        // 초기화
+        addLog('SetDocument 테스트 페이지 로드됨 (doc.load() 사용)', 'info')
+        
+        // 사용자 데이터 예시 자동 로드
+        setTimeout(() => {
+            loadPreset('user-data')
+        }, 1000)
+    </script>
+</body>
+</html> 

@@ -19,9 +19,94 @@ import {
 } from './utils/collection.js';
 import { mountDefaultDocEditor } from './utils/setup-playground';
 import { prepareTestApp } from './utils/test';
+import { Text, type Workspace } from '@blocksuite/affine/store';
 
 commentEffects();
 itEffects();
+
+// 붙여넣기 기능을 위한 함수
+function setupPasteHandler() {
+  document.addEventListener('paste', (event) => {
+    console.log('📋 붙여넣기 이벤트 감지됨');
+    
+    // 클립보드에서 텍스트 가져오기
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) {
+      console.log('클립보드 데이터가 없습니다');
+      return;
+    }
+
+    const pastedText = clipboardData.getData('text/plain');
+    if (!pastedText) {
+      console.log('붙여넣을 텍스트가 없습니다');
+      return;
+    }
+
+    console.log('붙여넣은 텍스트:', pastedText);
+
+    // BlockSuite 에디터에 텍스트 삽입
+    insertTextToBlockSuiteEditor(pastedText);
+  });
+}
+
+// BlockSuite 에디터에 텍스트 삽입하는 함수
+function insertTextToBlockSuiteEditor(text: string) {
+  try {
+    // 현재 포커스된 요소 찾기
+    const activeElement = document.activeElement;
+    if (!activeElement) {
+      console.log('활성화된 요소가 없습니다');
+      return;
+    }
+
+    // BlockSuite 에디터 영역인지 확인
+    const editorContainer = activeElement.closest('.affine-editor-container');
+    if (!editorContainer) {
+      console.log('BlockSuite 에디터를 찾을 수 없습니다');
+      return;
+    }
+
+    // 현재 선택된 영역 찾기
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      console.log('선택된 영역이 없습니다');
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+
+    // DOM 텍스트 노드인지 확인
+    if (container.nodeType === 3) { // TEXT_NODE
+      const textNode = container as globalThis.Text;
+      const startOffset = range.startOffset;
+      const endOffset = range.endOffset;
+      
+      // 선택된 텍스트를 새로운 텍스트로 교체
+      const newText = textNode.textContent || '';
+      const beforeText = newText.substring(0, startOffset);
+      const afterText = newText.substring(endOffset);
+      const finalText = beforeText + text + afterText;
+      
+      textNode.textContent = finalText;
+      
+      // 커서 위치 조정
+      const newRange = document.createRange();
+      newRange.setStart(textNode, startOffset + text.length);
+      newRange.setEnd(textNode, startOffset + text.length);
+      
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      
+      console.log('✅ 텍스트가 성공적으로 삽입되었습니다');
+    } else {
+      console.log('텍스트 노드가 아닙니다. 컨테이너 타입:', container.nodeType);
+    }
+
+  } catch (error) {
+    console.error('텍스트 삽입 중 오류:', error);
+  }
+}
 
 // iframe과 부모 컨테이너 간의 통신을 위한 함수들
 function setupIframeApi() {
@@ -44,6 +129,8 @@ function setupIframeApi() {
     }
   }
 
+
+
   // 부모 윈도우로 데이터를 전송하는 함수
   function sendToParent(type: string, data: any) {
     if (window.parent && window.parent !== window) {
@@ -55,23 +142,198 @@ function setupIframeApi() {
     }
   }
 
-  // 실시간으로 문서 변경사항을 부모에게 전달
-  function setupRealtimeSync() {
-    if (window.doc) {
-      // 문서가 변경될 때마다 부모에게 JSON 데이터 전송
-      window.doc.slots.blockUpdated.on(() => {
-        const jsonData = getDocumentAsJson();
-        if (jsonData) {
-          sendToParent('documentUpdated', jsonData);
+  // JSON 데이터로부터 문서 내용을 설정하는 함수
+  function setDocumentContent(jsonData: any) {
+    try {
+      console.log('📥 문서 설정 요청 받음', jsonData);
+      
+      if (!jsonData || !jsonData.blocks) {
+        console.log('유효하지 않은 JSON 데이터입니다');
+        throw new Error('유효하지 않은 JSON 데이터입니다');
+      }
+
+      console.log('window.doc', window.doc);
+      const doc = window.doc;
+      if (!doc) {
+        console.log('현재 문서를 찾을 수 없습니다');
+        throw new Error('현재 문서를 찾을 수 없습니다');
+      }
+
+      // 문서 내용을 모두 지우고 새로 시작
+      // doc.clear();
+      console.log('doc', doc);
+      
+      // doc.load() 함수를 사용하여 새로운 내용 로드
+      doc.load(() => {
+        console.log('doc.load');
+        try {
+          // 제목 추출
+          console.log('제목 추출 시작');
+          const title = extractTitle(jsonData);
+          
+          // 새로운 루트 블록 생성
+          const rootId = doc.addBlock('affine:page', {
+            title: new Text(title)
+          });
+          
+          // Surface 블록 추가
+          doc.addBlock('affine:surface', {}, rootId);
+          
+          // Note 블록 추가 (Untitled-2 스타일)
+          const noteId = doc.addBlock('affine:note', { 
+            xywh: '[0, 100, 800, 640]',
+            background: { dark: '#252525', light: '#ffffff' },
+            index: 'a0',
+            lockedBySelf: false,
+            hidden: false,
+            displayMode: 'both',
+            edgeless: {
+              style: {
+                borderRadius: 8,
+                borderSize: 4,
+                borderStyle: 'none',
+                shadowType: '--affine-note-shadow-box'
+              }
+            }
+          }, rootId);
+          
+          // JSON 데이터에서 블록들을 추출하여 추가
+          addBlocksFromJson(jsonData, doc, noteId);
+          
+          // 히스토리 리셋
+          doc.resetHistory();
+          
+          console.log('✅ 문서 내용 설정 완료');
+          
+          // 성공 응답 전송
+          sendToParent('documentSetSuccess', {
+            success: true,
+            message: '문서가 성공적으로 설정되었습니다'
+          });
+          
+          // 새로 설정된 문서 내용을 부모에게 전송
+          setTimeout(() => {
+            const newJsonData = getDocumentAsJson();
+            if (newJsonData) {
+              sendToParent('documentUpdated', newJsonData);
+            }
+          }, 100);
+          
+        } catch (innerError) {
+          console.error('❌ 블록 추가 실패:', innerError);
+          throw innerError;
         }
       });
+      
+    } catch (error) {
+      console.error('❌ 문서 설정 실패:', error);
+      
+      // 실패 응답 전송
+      sendToParent('documentSetError', {
+        success: false,
+        error: (error as Error).message || '알 수 없는 오류가 발생했습니다'
+      });
+    }
+  }
 
-      // 초기 문서 내용 전송
+  // JSON에서 제목 추출
+  function extractTitle(jsonData: any) {
+    try {
+      if (jsonData.blocks?.props?.title?.delta) {
+        const titleDelta = jsonData.blocks.props.title.delta;
+        if (Array.isArray(titleDelta) && titleDelta.length > 0) {
+          return titleDelta.map(item => item.insert || '').join('');
+        }
+      }
+      return '';
+    } catch (error) {
+      console.warn('제목 추출 실패:', error);
+      return '';
+    }
+  }
+
+  // JSON 데이터에서 블록들을 추출하여 문서에 추가
+  function addBlocksFromJson(jsonData: any, doc: any, parentId: string) {
+    try {
+      const blocks = jsonData.blocks;
+      if (!blocks) return;
+
+      // 재귀적으로 블록들을 처리
+      function processBlock(block: any, parent: string) {
+        if (!block || !block.flavour) return;
+        
+        // 페이지나 서피스 블록은 이미 생성했으므로 스킵
+        if (block.flavour === 'affine:page' || block.flavour === 'affine:surface') {
+          // 자식 블록들만 처리
+          if (block.children && Array.isArray(block.children)) {
+            block.children.forEach((child: any) => {
+              processBlock(child, parent);
+            });
+          }
+          return;
+        }
+
+        // 노트 블록인 경우, 이미 생성된 노트 블록을 사용
+        if (block.flavour === 'affine:note') {
+          if (block.children && Array.isArray(block.children)) {
+            block.children.forEach((child: any) => {
+              processBlock(child, parent);
+            });
+          }
+          return;
+        }
+
+        // 일반 블록들 처리
+        const blockProps: any = {};
+        
+        // 텍스트 내용 추출
+        if (block.props?.text && block.props.text['$blocksuite:internal:text$']) {
+          const delta = block.props.text.delta;
+          if (Array.isArray(delta)) {
+            const textContent = delta.map(item => item.insert || '').join('');
+            if (textContent) {
+              // 텍스트 블록으로 변환
+              const newBlockId = doc.addBlock('affine:paragraph', {
+                type: 'text',
+                text: new Text(textContent),
+                collapsed: false
+              }, parent);
+              console.log(`📝 블록 추가됨: "${textContent}" (${block.flavour} → affine:paragraph)`);
+            }
+          }
+        } else {
+          // 텍스트가 없는 블록은 기본 단락으로
+          doc.addBlock('affine:paragraph', {}, parent);
+        }
+      }
+
+      // 루트 블록부터 처리 시작
+      processBlock(blocks, parentId);
+      
+    } catch (error) {
+      console.error('블록 추가 중 오류:', error);
+      // 오류가 발생해도 기본 단락 블록 하나는 추가
+      doc.addBlock('affine:paragraph', {}, parentId);
+    }
+  }
+
+  // 실시간으로 문서 변경사항을 부모에게 전달
+  function setupRealtimeSync() {
+  //   if (window.doc) {
+  //     // 문서가 변경될 때마다 부모에게 JSON 데이터 전송
+  //     window.doc.slots.blockUpdated.on(() => {
+  //       const jsonData = getDocumentAsJson();
+  //       if (jsonData) {
+  //         sendToParent('documentUpdated', jsonData);
+  //       }
+  //     });
+
+  //     // 초기 문서 내용 전송
       const initialData = getDocumentAsJson();
       if (initialData) {
         sendToParent('documentLoaded', initialData);
       }
-    }
+  //   }
   }
 
   // 부모로부터 메시지를 받는 리스너
@@ -85,8 +347,8 @@ function setupIframeApi() {
           break;
         
         case 'setDocument':
-          // 부모가 문서 내용을 설정할 때 (향후 구현 가능)
-          console.log('Set document request received:', event.data.data);
+          // 부모가 문서 내용을 설정할 때
+          setDocumentContent(event.data.data);
           break;
       }
     }
@@ -138,6 +400,9 @@ async function main() {
 
   // iframe API 설정
   const iframeApi = setupIframeApi();
+  
+  // 붙여넣기 기능 초기화
+  setupPasteHandler();
   
   // 문서가 로드된 후 실시간 동기화 설정
   setTimeout(() => {
