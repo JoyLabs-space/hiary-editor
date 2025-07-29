@@ -20,9 +20,409 @@ import {
 import { mountDefaultDocEditor } from './utils/setup-playground';
 import { prepareTestApp } from './utils/test';
 import { Text, type Workspace } from '@blocksuite/affine/store';
+import EmojiPicker from 'emoji-picker-react'; // emoji-picker-react v4 기준
 
 commentEffects();
 itEffects();
+
+// 이모지 매핑
+const emojiMap: { [key: string]: string } = {
+  'smile': '😊',
+  'laugh': '😄', 
+  'wink': '😉',
+  'heart': '❤️',
+  'thumbsup': '👍',
+  'thumbsdown': '👎',
+  'fire': '🔥',
+  'star': '⭐',
+  'check': '✅',
+  'x': '❌',
+  'warning': '⚠️',
+  'info': 'ℹ️',
+  'question': '❓',
+  'exclamation': '❗',
+  'sun': '☀️',
+  'moon': '🌙',
+  'rainbow': '🌈',
+  'rocket': '🚀',
+  'party': '🎉',
+  'gift': '🎁',
+  'cake': '🎂',
+  'coffee': '☕',
+  'pizza': '🍕',
+  'beer': '🍺',
+  'wine': '🍷',
+  'music': '🎵',
+  'video': '🎬',
+  'game': '🎮',
+  'book': '📚',
+  'pencil': '✏️',
+  'computer': '💻',
+  'phone': '📱',
+  'camera': '📷',
+  'clock': '⏰',
+  'calendar': '📅',
+  'money': '💰',
+  'dollar': '💵',
+  'euro': '💶',
+  'yen': '💴',
+  'pound': '💷',
+  'gem': '💎',
+  'crown': '👑',
+  'trophy': '🏆',
+  'medal': '🏅',
+  'flag': '🏁',
+  'map': '🗺️',
+  'globe': '🌍',
+  'building': '🏢',
+  'house': '🏠',
+  'car': '🚗',
+  'plane': '✈️',
+  'ship': '🚢',
+  'train': '🚂',
+  'bike': '🚲',
+  'walk': '🚶',
+  'run': '🏃',
+  'dance': '💃',
+  'sleep': '😴',
+  'sick': '🤒',
+  'cool': '😎',
+  'nerd': '🤓',
+  'clown': '🤡',
+  'ghost': '👻',
+  'alien': '👽',
+  'robot': '🤖',
+  'angel': '👼',
+  'devil': '😈',
+  'skull': '💀',
+  'zombie': '🧟',
+  'vampire': '🧛',
+  'witch': '🧙',
+  'fairy': '🧚',
+  'dragon': '🐉',
+  'unicorn': '🦄',
+  'phoenix': '🦅',
+  'griffin': '🦁',
+  'pegasus': '🦄',
+  'mermaid': '🧜',
+  'siren': '🧜‍♀️',
+  'triton': '🧜‍♂️',
+  'centaur': '🐎',
+  'minotaur': '🐂',
+  'sphinx': '🦁',
+  'hydra': '🐍',
+  'chimera': '🦁',
+  'cerberus': '🐕'
+};
+
+// 이모지 기능
+function setupEmojiFeature() {
+  let emojiPopup: HTMLElement | null = null;
+  let currentInput: Element | null = null;
+
+  // 현재 에디터 인스턴스에 접근하는 함수
+  function getCurrentEditor() {
+    // window.editor를 통해 현재 에디터 인스턴스에 접근
+    const editor = (window as any).editor;
+    if (editor) {
+      console.log('✅ 에디터 인스턴스 발견:', editor);
+      return editor;
+    }
+    
+    // window.doc를 통해 현재 문서에 접근
+    const doc = (window as any).doc;
+    if (doc) {
+      console.log('✅ 문서 인스턴스 발견:', doc);
+      return doc;
+    }
+    
+    console.log('❌ 에디터 또는 문서 인스턴스를 찾을 수 없습니다');
+    return null;
+  }
+
+  // 블록 path를 사용하여 DOM 요소를 찾는 함수
+  function findBlockElementByPath(path: string[], container: HTMLElement): HTMLElement | null {
+    try {
+      let currentElement: HTMLElement | null = container;
+      
+      for (const blockId of path) {
+        if (!currentElement) {
+          console.log(`❌ 경로 탐색 실패: ${blockId}에서 중단`);
+          return null;
+        }
+        
+        // data-block-id 속성을 사용하여 블록 요소 찾기
+        const blockElement = currentElement.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement;
+        if (!blockElement) {
+          console.log(`❌ 블록 요소를 찾을 수 없습니다: ${blockId}`);
+          return null;
+        }
+        
+        console.log(`✅ 블록 요소 발견: ${blockId}`, blockElement);
+        currentElement = blockElement;
+      }
+      
+      return currentElement;
+    } catch (error) {
+      console.error('블록 요소 찾기 중 오류:', error);
+      return null;
+    }
+  }
+
+  // 키보드 이벤트 리스너
+  document.addEventListener('keydown', (event) => {
+    // 콜론(:) 키 감지
+    if (event.key === ':') {
+      console.log('🎯 콜론 감지됨!');
+      
+      // 현재 에디터 인스턴스 가져오기
+      const editor = getCurrentEditor();
+      if (!editor) {
+        console.log('에디터 인스턴스를 찾을 수 없습니다');
+        return;
+      }
+
+      // 에디터의 std.selection을 통해 현재 selection 가져오기
+      // try {
+      //   if (editor.std && editor.std.selection) {
+      //     const selection = editor.std.selection;
+
+      //     // TextSelection 찾기
+      //     const textSelection = selection.value[0].blockId
+      //     console.log('textSelection', textSelection);
+      //     if (textSelection) {
+      //       // 블록 내에서 v-text 요소 찾기
+      //       const vTextElement = document.querySelector(`[data-block-id="${textSelection}"]`);
+      //       console.log('vTextElement', vTextElement);
+      //       if (vTextElement) {
+      //         currentInput = vTextElement;
+      //         console.log('currentInput', currentInput);
+              
+      //         // 이모지 팝업 표시
+      //         // showEmojiPopup();
+      //       } else {
+      //         console.log('❌ v-text 요소를 찾을 수 없습니다');
+      //       }
+      //     } else {
+      //       console.log('❌ TextSelection을 찾을 수 없습니다');
+            
+      //       // fallback: 기존 방식 사용
+      //       const activeElement = document.activeElement;
+      //       if (!activeElement) return;
+
+      //       const editorContainer = activeElement.closest('affine-page-root');
+      //       if (!editorContainer) {
+      //         console.log('BlockSuite 에디터를 찾을 수 없습니다');
+      //         return;
+      //       }
+
+      //       const vTextElement = editorContainer.querySelector('[data-v-text="true"]');
+      //       if (vTextElement) {
+      //         currentInput = vTextElement;
+      //         showEmojiPopup();
+      //       } else {
+      //         console.log('❌ v-text 요소를 찾을 수 없습니다');
+      //       }
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.error('❌ 에디터 selection 처리 중 오류:', error);
+        
+      //   // fallback: 기존 방식 사용
+      //   const activeElement = document.activeElement;
+      //   if (!activeElement) return;
+
+      //   const editorContainer = activeElement.closest('affine-page-root');
+      //   if (!editorContainer) {
+      //     console.log('BlockSuite 에디터를 찾을 수 없습니다');
+      //     return;
+      //   }
+
+      //   const vTextElement = editorContainer.querySelector(`[data-block-id="${blockPath}"]`);
+      //   if (vTextElement) {
+      //     currentInput = vTextElement;
+      //     console.log('✅ fallback: v-text 요소 발견:', vTextElement);
+      //     showEmojiPopup();
+      //   }
+      // }
+    }
+  });
+
+  // 이모지 팝업 표시
+  function showEmojiPopup() {
+    try {
+      // 기존 팝업 제거
+      if (emojiPopup) {
+        emojiPopup.remove();
+        emojiPopup = null;
+      }
+
+      // 팝업 생성
+      emojiPopup = document.createElement('div');
+      emojiPopup.className = 'emoji-popup';
+      emojiPopup.setAttribute('data-emoji-popup', 'true');
+      emojiPopup.style.cssText = `
+        position: fixed;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 999999;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: Arial, sans-serif;
+        padding: 8px 0;
+        min-width: 200px;
+        pointer-events: auto;
+        user-select: none;
+        isolation: isolate;
+      `;
+
+      // 이모지 목록 생성
+      const emojiList = document.createElement('div');
+      emojiList.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 8px;
+      `;
+
+      Object.entries(emojiMap).forEach(([name, emoji]) => {
+        const emojiItem = document.createElement('div');
+        emojiItem.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 8px;
+          cursor: pointer;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+          font-size: 12px;
+          text-align: center;
+        `;
+        emojiItem.innerHTML = `
+          <span style="font-size: 20px; margin-bottom: 4px;">${emoji}</span>
+          <span style="color: #666;">${name}</span>
+        `;
+
+        emojiItem.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          
+          insertEmoji(name, emoji);
+          hideEmojiPopup();
+        });
+
+        emojiItem.addEventListener('mouseenter', () => {
+          emojiItem.style.backgroundColor = '#f0f0f0';
+        });
+
+        emojiItem.addEventListener('mouseleave', () => {
+          emojiItem.style.backgroundColor = 'transparent';
+        });
+
+        emojiList.appendChild(emojiItem);
+      });
+
+      emojiPopup.appendChild(emojiList);
+
+      // 팝업을 document.body에 추가
+      document.body.appendChild(emojiPopup);
+
+      // 위치 조정 (화면 중앙에 표시)
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const popupWidth = 300;
+      const popupHeight = 400;
+      
+      emojiPopup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
+      emojiPopup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
+
+      // 5초 후 자동으로 숨김
+      setTimeout(() => {
+        hideEmojiPopup();
+      }, 5000);
+      
+    } catch (error) {
+      console.error('❌ 이모지 팝업 생성 중 오류:', error);
+    }
+  }
+
+  // 이모지 팝업 숨기기
+  function hideEmojiPopup() {
+    if (emojiPopup) {
+      emojiPopup.remove();
+      emojiPopup = null;
+    }
+  }
+
+  // 이모지 삽입
+  function insertEmoji(name: string, emoji: string) {
+    if (!currentInput) return;
+
+    console.log(`🎯 이모지 삽입: ${name} → ${emoji}`);
+
+    try {
+      // 현재 텍스트 가져오기
+      const currentText = currentInput?.querySelector('[data-v-text="true"]')?.innerHTML || '';
+      console.log('currentText', currentText);
+      
+      // 콜론을 찾아서 이모지로 교체
+      const colonIndex = currentText.lastIndexOf(':');
+      console.log('colonIndex', colonIndex);
+      if (colonIndex !== -1) {
+        const beforeColon = currentText.substring(0, colonIndex);
+        const afterColon = currentText.substring(colonIndex + 1);
+        
+        // 새로운 텍스트 생성
+        const newText = beforeColon + emoji + afterColon;
+        document.querySelector(`[data-block-id="${currentInput.blockId}"]`).querySelector('[data-v-text="true"]').innerHTML = newText;
+
+        console.log('newText', newText);
+        console.log('currentInput', currentInput);
+        
+        // 커서 위치 조정
+        // const newCursorPosition = beforeColon.length + emoji.length;
+        // const range = document.createRange();
+        // const selection = window.getSelection();
+        
+        // if (currentInput.firstChild && selection) {
+        //   range.setStart(currentInput.firstChild, newCursorPosition);
+        //   range.setEnd(currentInput.firstChild, newCursorPosition);
+        //   selection.removeAllRanges();
+        //   selection.addRange(range);
+        // }
+        
+        console.log('✅ 이모지 삽입 완료');
+      }
+    } catch (error) {
+      console.error('❌ 이모지 삽입 중 오류:', error);
+    }
+  }
+
+  // 외부 클릭 시 팝업 숨기기
+  document.addEventListener('click', (event) => {
+    if (emojiPopup && !emojiPopup.contains(event.target as Node)) {
+      try {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        hideEmojiPopup();
+      } catch (error) {
+        console.error('❌ 외부 클릭 처리 중 오류:', error);
+        hideEmojiPopup();
+      }
+    }
+  }, true);
+
+  // ESC 키로 팝업 숨기기
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && emojiPopup) {
+      hideEmojiPopup();
+    }
+  });
+}
 
 // 붙여넣기 기능을 위한 함수
 function setupPasteHandler() {
@@ -129,6 +529,15 @@ function setupIframeApi() {
     }
   }
 
+  // 블록 요소를 찾는 유틸리티 함수
+  function findBlockElementByPath(path: string[], container: HTMLElement): HTMLElement | null {
+    let currentElement: HTMLElement | null = container;
+    for (const segment of path) {
+      if (!currentElement) return null;
+      currentElement = currentElement.querySelector(`[data-block-id="${segment}"]`);
+    }
+    return currentElement;
+  }
 
 
   // 부모 윈도우로 데이터를 전송하는 함수
@@ -403,6 +812,9 @@ async function main() {
   
   // 붙여넣기 기능 초기화
   setupPasteHandler();
+  
+  // 이모지 기능 초기화
+  setupEmojiFeature();
   
   // 문서가 로드된 후 실시간 동기화 설정
   setTimeout(() => {
