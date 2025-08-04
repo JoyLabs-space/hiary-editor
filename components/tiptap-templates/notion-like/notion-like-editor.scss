@@ -56,7 +56,7 @@ body,
 .notion-like-editor-content {
   max-width: 768px;
   width: 100%;
-  margin: 0 auto;
+  margin: 0 0 0 10%; /* 왼쪽으로 이동 */
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -65,12 +65,12 @@ body,
 
 .notion-like-editor-content .tiptap.ProseMirror.notion-like-editor {
   flex: 1;
-  padding: 3rem 3rem 30vh;
+  padding: 0 3rem 30vh; /* 상단 패딩을 0으로 변경 */
 }
 
 @media screen and (max-width: 480px) {
   .notion-like-editor-content .tiptap.ProseMirror.notion-like-editor {
-    padding: 1.5rem 1.5rem 30vh;
+    padding: 0 1.5rem 30vh; /* 모바일에서도 상단 패딩 제거 */
   }
 }
 

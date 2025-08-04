@@ -18,7 +18,6 @@ import { Superscript } from "@tiptap/extension-superscript"
 import { Subscript } from "@tiptap/extension-subscript"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Mathematics } from "@tiptap/extension-mathematics"
-import { Ai } from "@tiptap-pro/extension-ai"
 import { UniqueID } from "@tiptap/extension-unique-id"
 import { Emoji, gitHubEmojis } from "@tiptap/extension-emoji"
 
@@ -120,6 +119,92 @@ export function EditorContentArea() {
     aiGenerationIsSelection,
     editor,
   ])
+
+  // 에디터 내용을 JSON으로 추출하는 함수
+  const getDocumentAsJson = React.useCallback(() => {
+    if (!editor) return
+
+    try {
+      // 에디터의 JSON 내용 가져오기
+      const jsonContent = editor.getJSON()
+
+      return jsonContent;
+      
+    } catch (error) {
+      console.error('에디터 내용 추출 중 오류 발생:', error)
+    }
+  }, [editor])
+
+  // JSON 데이터로 에디터 내용을 설정하는 함수
+  const setEditorJsonData = React.useCallback((data: Record<string, unknown>) => {
+    if (!editor) {
+      console.error('에디터가 초기화되지 않았습니다.')
+      return
+    }
+
+    try {
+      // JSON 데이터를 에디터에 설정
+      editor.commands.setContent(data)
+    } catch (error) {
+      console.error('에디터 내용 설정 중 오류 발생:', error)
+    }
+  }, [editor])
+
+  // 부모로부터 메시지를 받는 리스너
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type) {
+        switch (event.data.type) {
+          case 'EDITOR_JSON_DATA':
+            // 부모가 현재 문서 내용을 요청할 때
+            const jsonData = getDocumentAsJson();
+            if (jsonData) {
+              sendToParent('documentData', jsonData);
+            }
+            break;
+          case 'SET_EDITOR_JSON_DATA':
+            const data = event.data.data;
+            setEditorJsonData(data);
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [getDocumentAsJson, setEditorJsonData]);
+
+  // 부모 윈도우로 데이터를 전송하는 함수
+  const sendToParent = React.useCallback((type: string, data: Record<string, unknown>) => {
+    if (window.parent && window.parent !== window) {
+      console.log('DEBUG - sendToParent', data)
+      window.parent.postMessage({
+        type: 'EDITOR_JSON_DATA',
+        data,
+        source: 'notion-like-editor',
+        payload: data,
+      }, '*');
+    }
+  }, []);
+
+// iframe 프로젝트 코드 안에서
+React.useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      // 또는 부모에게 알릴 수도 있음
+      window.parent.postMessage({ type: 'SAVE_PRESSED' }, '*');
+    }
+    window.parent.postMessage({ type: 'IFRAME_KEYDOWN' }, '*');
+  };
+
+  document.addEventListener('keydown', handleKeyDown);
+  
+  // Cleanup function
+  return () => {
+    document.removeEventListener('keydown', handleKeyDown);
+  };
+}, []);
 
   if (!editor) {
     return null
@@ -229,31 +314,7 @@ export function EditorProvider(props: EditorProviderProps) {
 
   // No collaboration extensions for standalone mode
 
-  // Add AI extension only if token is available
-  if (aiToken) {
-    extensions.push(
-      Ai.configure({
-        appId: TIPTAP_AI_APP_ID,
-        token: aiToken,
-        autocompletion: false,
-        showDecorations: true,
-        hideDecorationsOnStreamEnd: false,
-        onLoading: (context) => {
-          context.editor.commands.aiGenerationSetIsLoading(true)
-          context.editor.commands.aiGenerationHasMessage(false)
-        },
-        onChunk: (context) => {
-          context.editor.commands.aiGenerationSetIsLoading(true)
-          context.editor.commands.aiGenerationHasMessage(true)
-        },
-        onSuccess: (context) => {
-          const hasMessage = !!context.response
-          context.editor.commands.aiGenerationSetIsLoading(false)
-          context.editor.commands.aiGenerationHasMessage(hasMessage)
-        },
-      })
-    )
-  }
+  // AI extension removed for standalone mode
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -273,7 +334,6 @@ export function EditorProvider(props: EditorProviderProps) {
   return (
     <div className="notion-like-editor-wrapper">
       <EditorContext.Provider value={{ editor }}>
-        <NotionEditorHeader />
         <EditorContentArea />
       </EditorContext.Provider>
     </div>
@@ -307,16 +367,10 @@ export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
   const { provider, ydoc, hasCollab } = useCollab()
   const { aiToken, hasAi } = useAi()
 
-  console.log('DEBUG - hasCollab:', hasCollab, 'provider:', !!provider)
-  console.log('DEBUG - hasAi:', hasAi, 'aiToken:', !!aiToken)
-
   // Show loading only if collab or AI features are enabled but tokens are still loading
   if ((hasCollab && !provider) || (hasAi && !aiToken)) {
-    console.log('DEBUG - Showing LoadingSpinner')
     return <LoadingSpinner />
   }
-
-  console.log('DEBUG - Rendering EditorProvider')
 
   return (
     <EditorProvider
@@ -325,3 +379,4 @@ export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
     />
   )
 }
+
