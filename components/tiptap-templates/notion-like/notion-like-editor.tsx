@@ -18,7 +18,6 @@ import { Superscript } from "@tiptap/extension-superscript"
 import { Subscript } from "@tiptap/extension-subscript"
 import { TextAlign } from "@tiptap/extension-text-align"
 import { Mathematics } from "@tiptap/extension-mathematics"
-import { Ai } from "@tiptap-pro/extension-ai"
 import { UniqueID } from "@tiptap/extension-unique-id"
 import { Emoji, gitHubEmojis } from "@tiptap/extension-emoji"
 
@@ -266,7 +265,6 @@ export function EditorContentArea() {
   // 부모로부터 메시지를 받는 리스너
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      console.log(event)
       if (event.data && event.data.type) {
         switch (event.data.type) {
           case 'EDITOR_JSON_DATA':
@@ -463,31 +461,7 @@ export function EditorProvider(props: EditorProviderProps) {
 
   // No collaboration extensions for standalone mode
 
-  // Add AI extension only if token is available
-  if (aiToken) {
-    extensions.push(
-      Ai.configure({
-        appId: TIPTAP_AI_APP_ID,
-        token: aiToken,
-        autocompletion: false,
-        showDecorations: true,
-        hideDecorationsOnStreamEnd: false,
-        onLoading: (context) => {
-          context.editor.commands.aiGenerationSetIsLoading(true)
-          context.editor.commands.aiGenerationHasMessage(false)
-        },
-        onChunk: (context) => {
-          context.editor.commands.aiGenerationSetIsLoading(true)
-          context.editor.commands.aiGenerationHasMessage(true)
-        },
-        onSuccess: (context) => {
-          const hasMessage = !!context.response
-          context.editor.commands.aiGenerationSetIsLoading(false)
-          context.editor.commands.aiGenerationHasMessage(hasMessage)
-        },
-      })
-    )
-  }
+  // AI extension removed for standalone mode
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -507,7 +481,6 @@ export function EditorProvider(props: EditorProviderProps) {
   return (
     <div className="notion-like-editor-wrapper">
       <EditorContext.Provider value={{ editor }}>
-        <NotionEditorHeader />
         <EditorContentArea />
       </EditorContext.Provider>
     </div>
@@ -541,16 +514,10 @@ export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
   const { provider, ydoc, hasCollab } = useCollab()
   const { aiToken, hasAi } = useAi()
 
-  console.log('DEBUG - hasCollab:', hasCollab, 'provider:', !!provider)
-  console.log('DEBUG - hasAi:', hasAi, 'aiToken:', !!aiToken)
-
   // Show loading only if collab or AI features are enabled but tokens are still loading
   if ((hasCollab && !provider) || (hasAi && !aiToken)) {
-    console.log('DEBUG - Showing LoadingSpinner')
     return <LoadingSpinner />
   }
-
-  console.log('DEBUG - Rendering EditorProvider')
 
   return (
     <EditorProvider
