@@ -55,7 +55,6 @@ import { AiProvider, useAi } from "@/contexts/ai-context"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
-import { TIPTAP_AI_APP_ID } from "@/lib/tiptap-collab-utils"
 import Paragraph from '@tiptap/extension-paragraph'
 import { CodeBlockLanguageDropdown } from "@/components/tiptap-ui/code-block-language-dropdown/CodeBlockLanguageDropdown"
 import { TableKit } from '@tiptap/extension-table'
@@ -65,7 +64,6 @@ import "@/components/tiptap-templates/notion-like/notion-like-editor.scss"
 import "@/components/tiptap-ui/paste-modal/paste-modal.scss";
 
 // --- Content ---
-import { NotionEditorHeader } from "@/components/tiptap-templates/notion-like/notion-like-editor-header"
 import { MobileToolbar } from "@/components/tiptap-templates/notion-like/notion-like-editor-mobile-toolbar"
 import { NotionToolbarFloating } from "@/components/tiptap-templates/notion-like/notion-like-editor-toolbar-floating"
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
@@ -207,8 +205,9 @@ export function EditorContentArea() {
       aiGenerationIsSelection &&
       aiGenerationHasMessage
     ) {
-      editor.chain().focus().aiAccept().run()
       editor.commands.resetUiState()
+      editor.commands.setCodeBlock()
+      editor.commands.toggleCodeBlock()
     }
   }, [
     aiGenerationHasMessage,
@@ -265,6 +264,7 @@ export function EditorContentArea() {
   // 부모로부터 메시지를 받는 리스너
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      console.log(event)
       if (event.data && event.data.type) {
         switch (event.data.type) {
           case 'EDITOR_JSON_DATA':

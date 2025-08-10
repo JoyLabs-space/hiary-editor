@@ -355,7 +355,6 @@ const getItemImplementations = () => {
         editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
       },
     },
-
     // Upload
     image: {
       check: (editor: Editor) => isNodeInSchema("image", editor),
