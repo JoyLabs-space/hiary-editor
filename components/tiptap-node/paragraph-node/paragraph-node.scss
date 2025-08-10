@@ -19,6 +19,16 @@
   }
 }
 
+/* Support body.code-dark as dark trigger for placeholders/text vars */
+body.code-dark .tiptap.ProseMirror {
+  --tt-collaboration-carets-label: var(--tt-gray-dark-100);
+  --link-text-color: var(--tt-brand-color-400);
+  --thread-text: var(--tt-gray-dark-900);
+  --placeholder-color: var(--tt-gray-dark-a-400);
+  --thread-bg-color: var(--tt-color-yellow-dec-2);
+  --tiptap-ai-insertion-color: var(--tt-brand-color-400);
+}
+
 /* Ensure each top-level node has relative positioning 
    so absolutely positioned placeholders work correctly */
 .tiptap.ProseMirror > * {
@@ -60,7 +70,6 @@
   // Selected node styles
   .ProseMirror-selectednode:not(img):not(pre):not(.react-renderer) {
     border-radius: var(--tt-radius-md);
-    background-color: var(--tt-selection-color);
   }
 
   .ProseMirror-hideselection {

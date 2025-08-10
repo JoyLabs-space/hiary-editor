@@ -162,6 +162,13 @@ const texts = {
     badge: FunctionSquareIcon,
     group: "Insert",
   },
+  table: {
+    title: "테이블",
+    subtext: "3x3 테이블 삽입",
+    aliases: ["TableKit"],
+    badge: FunctionSquareIcon,
+    group: "Insert",
+  },
 
   // Upload
   image: {
@@ -221,11 +228,6 @@ const getItemImplementations = () => {
           editor
             .chain()
             .focus()
-            .aiTextPrompt({
-              stream: true,
-              format: "rich-text",
-              text: prompt,
-            })
             .run()
         })
       },
@@ -324,22 +326,35 @@ const getItemImplementations = () => {
     inline_math: {
       check: (editor: Editor) => isExtensionAvailable(editor, ["Mathematics", "inlineMath"]),
       action: ({ editor }: { editor: Editor }) => {
-        const latex = prompt("인라인 수식을 입력하세요 (예: E = mc^2):", "")
-        if (latex !== null) {
-          editor.chain().focus().insertInlineMath({ latex }).run()
-        }
+        // 모달 상태를 전역으로 관리하기 위해 커스텀 이벤트 사용
+        const event = new CustomEvent('open-math-modal', {
+          detail: {
+            type: 'inline',
+            editor
+          }
+        })
+        window.dispatchEvent(event)
       },
     },
     block_math: {
       check: (editor: Editor) => isExtensionAvailable(editor, ["Mathematics", "blockMath"]),
       action: ({ editor }: { editor: Editor }) => {
-        const latex = prompt("블록 수식을 입력하세요 (예: \\frac{a}{b}):", "")
-        if (latex !== null) {
-          editor.chain().focus().insertBlockMath({ latex }).run()
-        }
+        // 모달 상태를 전역으로 관리하기 위해 커스텀 이벤트 사용
+        const event = new CustomEvent('open-math-modal', {
+          detail: {
+            type: 'block',
+            editor
+          }
+        })
+        window.dispatchEvent(event)
       },
     },
-
+    table: {
+      check: (editor: Editor) => isNodeInSchema("table", editor),
+      action: ({ editor }: { editor: Editor }) => {
+        editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      },
+    },
     // Upload
     image: {
       check: (editor: Editor) => isNodeInSchema("image", editor),

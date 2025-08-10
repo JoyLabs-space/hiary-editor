@@ -44,6 +44,8 @@ import { MentionDropdownMenu } from "@/components/tiptap-ui/mention-dropdown-men
 import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu"
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
 import { AiMenu } from "@/components/tiptap-ui/ai-menu"
+import { useMathModal, MathInputModal } from "@/components/tiptap-ui/math-input-modal"
+import { PasteModal } from "@/components/tiptap-ui/paste-modal/paste-modal"
 
 // --- Contexts ---
 import { AppProvider } from "@/contexts/app-context"
@@ -53,15 +55,72 @@ import { AiProvider, useAi } from "@/contexts/ai-context"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
-import { TIPTAP_AI_APP_ID } from "@/lib/tiptap-collab-utils"
+import Paragraph from '@tiptap/extension-paragraph'
+import { CodeBlockLanguageDropdown } from "@/components/tiptap-ui/code-block-language-dropdown/CodeBlockLanguageDropdown"
+import { TableKit } from '@tiptap/extension-table'
 
 // --- Styles ---
 import "@/components/tiptap-templates/notion-like/notion-like-editor.scss"
+import "@/components/tiptap-ui/paste-modal/paste-modal.scss";
 
 // --- Content ---
-import { NotionEditorHeader } from "@/components/tiptap-templates/notion-like/notion-like-editor-header"
 import { MobileToolbar } from "@/components/tiptap-templates/notion-like/notion-like-editor-mobile-toolbar"
 import { NotionToolbarFloating } from "@/components/tiptap-templates/notion-like/notion-like-editor-toolbar-floating"
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { lowlight } from 'lowlight'
+import "highlight.js/styles/stackoverflow-dark.min.css";
+import Youtube from '@tiptap/extension-youtube'
+
+// 해당 부분에서 필요한 언어를 import 하여 lowlight에 적용할 수 있습니다.
+import html from "highlight.js/lib/languages/xml";
+import css from "highlight.js/lib/languages/css";
+import js from "highlight.js/lib/languages/javascript";
+import ts from "highlight.js/lib/languages/typescript";
+import python from "highlight.js/lib/languages/python";
+import cpp from "highlight.js/lib/languages/cpp";
+import json from "highlight.js/lib/languages/json";
+import java from "highlight.js/lib/languages/java";
+import c from "highlight.js/lib/languages/c";
+import csharp from "highlight.js/lib/languages/csharp";
+import sql from "highlight.js/lib/languages/sql";
+import bash from "highlight.js/lib/languages/bash";
+import markdown from "highlight.js/lib/languages/markdown";
+import php from "highlight.js/lib/languages/php";
+import ruby from "highlight.js/lib/languages/ruby";
+import scss from "highlight.js/lib/languages/scss";
+import less from "highlight.js/lib/languages/less";
+import go from "highlight.js/lib/languages/go";
+import rust from "highlight.js/lib/languages/rust";
+import swift from "highlight.js/lib/languages/swift";
+import kotlin from "highlight.js/lib/languages/kotlin";
+import { TapIndent } from "@/components/tiptap-ui/tap-indent/tap-indent"
+
+lowlight.registerLanguage("css", css);
+lowlight.registerLanguage("js", js);
+lowlight.registerLanguage("javascript", js);
+lowlight.registerLanguage("jsx", js);
+lowlight.registerLanguage("ts", ts);
+lowlight.registerLanguage("tsx", ts);
+lowlight.registerLanguage("typescript", ts);
+lowlight.registerLanguage("json", json);
+lowlight.registerLanguage("html", html);
+lowlight.registerLanguage("xml", html);
+lowlight.registerLanguage("python", python);
+lowlight.registerLanguage("cpp", cpp);
+lowlight.registerLanguage("c", c);
+lowlight.registerLanguage("java", java);
+lowlight.registerLanguage("csharp", csharp);
+lowlight.registerLanguage("sql", sql);
+lowlight.registerLanguage("bash", bash);
+lowlight.registerLanguage("markdown", markdown);
+lowlight.registerLanguage("php", php);
+lowlight.registerLanguage("ruby", ruby);
+lowlight.registerLanguage("scss", scss);
+lowlight.registerLanguage("less", less);
+lowlight.registerLanguage("go", go);
+lowlight.registerLanguage("rust", rust);
+lowlight.registerLanguage("swift", swift);
+lowlight.registerLanguage("kotlin", kotlin);
 
 export interface NotionEditorProps {
   room: string
@@ -100,6 +159,42 @@ export function EditorContentArea() {
     aiGenerationIsSelection,
     aiGenerationHasMessage,
   } = useUiEditorState(editor)
+  
+  // 수식 모달 훅 사용
+  const { modalProps } = useMathModal()
+  
+  // 붙여넣기 모달 상태
+  const [pasteModalState, setPasteModalState] = React.useState({
+    isOpen: false,
+    content: '',
+    position: null as { x: number; y: number } | null,
+  })
+
+  // 붙여넣기 모달 이벤트 리스너
+  React.useEffect(() => {
+    const handleShowPasteModal = (event: CustomEvent) => {
+      const { content, position } = event.detail
+      setPasteModalState({
+        isOpen: true,
+        content,
+        position,
+      })
+    }
+
+    window.addEventListener('show-paste-modal', handleShowPasteModal as EventListener)
+    
+    return () => {
+      window.removeEventListener('show-paste-modal', handleShowPasteModal as EventListener)
+    }
+  }, [])
+
+  const handlePasteModalClose = React.useCallback(() => {
+    setPasteModalState({
+      isOpen: false,
+      content: '',
+      position: null,
+    })
+  }, [])
 
   // Selection based effect to handle AI generation acceptance
   React.useEffect(() => {
@@ -110,8 +205,9 @@ export function EditorContentArea() {
       aiGenerationIsSelection &&
       aiGenerationHasMessage
     ) {
-      editor.chain().focus().aiAccept().run()
       editor.commands.resetUiState()
+      editor.commands.setCodeBlock()
+      editor.commands.toggleCodeBlock()
     }
   }, [
     aiGenerationHasMessage,
@@ -149,10 +245,26 @@ export function EditorContentArea() {
       console.error('에디터 내용 설정 중 오류 발생:', error)
     }
   }, [editor])
+  // JSON 데이터로 에디터 내용을 설정하는 함수
+  const setEditorJsonDataRead = React.useCallback((data: Record<string, unknown>) => {
+    if (!editor) {
+      console.error('에디터가 초기화되지 않았습니다.')
+      return
+    }
+
+    try {
+      // JSON 데이터를 에디터에 설정
+      editor.commands.setContent(data)
+      editor.setEditable(false)
+    } catch (error) {
+      console.error('에디터 내용 설정 중 오류 발생:', error)
+    }
+  }, [editor])
 
   // 부모로부터 메시지를 받는 리스너
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      console.log(event)
       if (event.data && event.data.type) {
         switch (event.data.type) {
           case 'EDITOR_JSON_DATA':
@@ -164,8 +276,20 @@ export function EditorContentArea() {
             break;
           case 'SET_EDITOR_JSON_DATA':
             const data = event.data.data;
+            console.log('DEBUG - SET_EDITOR_JSON_DATA', data)
             setEditorJsonData(data);
             break;
+          case 'SET_EDITOR_JSON_DATA_READ':
+            const dataRead = event.data.data;
+            console.log('DEBUG - SET_EDITOR_JSON_DATA_FROM_PARENT', dataRead)
+            setEditorJsonDataRead(dataRead);
+            break;
+          case 'change-color': {
+            const isDark = event.data.color === 'dark'
+            document.body.classList.toggle('code-dark', isDark)
+            console.log(isDark)
+            break;
+          }
         }
       }
     };
@@ -211,23 +335,36 @@ React.useEffect(() => {
   }
 
   return (
-    <EditorContent
-      editor={editor}
-      role="presentation"
-      className="notion-like-editor-content"
-      style={{
-        cursor: editor.view.dragging ? "grabbing" : "auto",
-      }}
-    >
-      <MobileToolbar />
-
-      <DragContextMenu />
-      <AiMenu />
-      <EmojiDropdownMenu />
-      <MentionDropdownMenu />
-      <SlashDropdownMenu />
-      <NotionToolbarFloating />
-    </EditorContent>
+    <>
+      {modalProps && <MathInputModal {...modalProps} />}
+      <EditorContent
+        editor={editor}
+        role="presentation"
+        className="notion-like-editor-content"
+        style={{
+          cursor: editor.view.dragging ? "grabbing" : "auto",
+        }}
+        spellCheck={false}
+      >
+        <MobileToolbar />
+        <DragContextMenu />
+        <AiMenu />
+        <EmojiDropdownMenu />
+        <MentionDropdownMenu />
+        <SlashDropdownMenu />
+        <NotionToolbarFloating />
+        <CodeBlockLanguageDropdown editor={editor} />
+      </EditorContent>
+      
+      {/* 붙여넣기 모달 */}
+      <PasteModal
+        editor={editor}
+        isOpen={pasteModalState.isOpen}
+        onClose={handlePasteModalClose}
+        pastedContent={pasteModalState.content}
+        position={pasteModalState.position}
+      />
+    </>
   )
 }
 
@@ -310,6 +447,16 @@ export function EditorProvider(props: EditorProviderProps) {
     UniqueID,
     Typography,
     UiState,
+    Paragraph,
+    CodeBlockLowlight.configure({
+      lowlight,
+      defaultLanguage: 'javascript',
+    }),
+    TapIndent,
+    TableKit.configure({
+      table: { resizable: true },
+    }),
+    Youtube,
   ]
 
   // No collaboration extensions for standalone mode

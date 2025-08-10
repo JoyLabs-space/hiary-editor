@@ -28,6 +28,14 @@
   }
 }
 
+/* Support body.code-dark as dark trigger */
+body.code-dark {
+  --tiptap-ai-prompt-input-content-placeholder: var(--tt-gray-dark-a-400);
+  --tiptap-ai-prompt-input-bg-color: var(--tt-gray-dark-50);
+  --tiptap-ai-prompt-input-focused-border-color: var(--tt-brand-color-500);
+  --tiptap-ai-prompt-input-border-color: var(--tt-gray-dark-a-200);
+}
+
 .tiptap-ai-prompt-input {
   background-color: var(--tiptap-ai-prompt-input-bg-color);
   border: 1px solid var(--tiptap-ai-prompt-input-border-color);

@@ -6,6 +6,11 @@
   --tiptap-input-placeholder: var(--tt-gray-dark-a-400);
 }
 
+/* Support body.code-dark as dark trigger */
+body.code-dark {
+  --tiptap-input-placeholder: var(--tt-gray-dark-a-400);
+}
+
 .tiptap-input {
   display: block;
   width: 100%;

@@ -5,6 +5,9 @@ import type { Editor } from "@tiptap/react"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 import { useIsMobile } from "@/hooks/use-mobile"
 
+// --- Constants ---
+const MATHEMATICS_SHORTCUT_KEY = ["mod", "m"]
+
 export interface UseMathematicsConfig {
   editor?: Editor | null
   hideWhenUnavailable?: boolean
@@ -81,6 +84,7 @@ export function useMathematics(config: UseMathematicsConfig = {}) {
   const { editor } = useTiptapEditor(providedEditor)
   const isMobile = useIsMobile()
   const [isVisible, setIsVisible] = React.useState<boolean>(true)
+  const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false)
   const canInsert = canInsertMathematics(editor, type)
 
   React.useEffect(() => {
@@ -101,30 +105,47 @@ export function useMathematics(config: UseMathematicsConfig = {}) {
 
   const handleInsert = React.useCallback(() => {
     if (!editor) return false
+    
+    // 모달 열기
+    setIsModalOpen(true)
+    return true
+  }, [editor])
 
-    // 간단한 프롬프트로 LaTeX 수식 입력받기
-    const latex = prompt(
-      type === "inline" 
-        ? "인라인 수식을 입력하세요 (예: E = mc^2):"
-        : "블록 수식을 입력하세요 (예: \\frac{a}{b}):",
-      ""
-    )
-    
-    if (latex !== null) {
-      const success = insertMathematics(editor, type, latex)
-      if (success) {
-        onInserted?.()
-      }
-      return success
+  const handleModalSubmit = React.useCallback((latex: string) => {
+    if (!editor) return false
+
+    const success = insertMathematics(editor, type, latex)
+    if (success) {
+      onInserted?.()
     }
-    
-    return false
+    setIsModalOpen(false)
+    return success
   }, [editor, type, onInserted])
+
+  const handleModalCancel = React.useCallback(() => {
+    setIsModalOpen(false)
+  }, [])
+
+  // useHotkeys(
+  //   MATHEMATICS_SHORTCUT_KEY,
+  //   (event) => {
+  //     event.preventDefault()
+  //     handleInsert()
+  //   },
+  //   {
+  //     enabled: isVisible && canInsert,
+  //     enableOnContentEditable: !isMobile,
+  //     enableOnFormTags: true,
+  //   }
+  // )
 
   return {
     isVisible,
     handleInsert,
     canInsert,
+    isModalOpen,
+    handleModalSubmit,
+    handleModalCancel,
     label: type === "inline" ? "인라인 수식" : "블록 수식",
     Icon: null, // Will be set in the button component
   }

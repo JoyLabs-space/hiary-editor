@@ -196,6 +196,13 @@
     color: var(--tt-button-default-icon-color);
   }
 
+  /* Dark mode support for button icons */
+  body.code-dark & {
+    .tiptap-button-icon {
+      color: #7a7a7a !important;
+    }
+  }
+
   .tiptap-button-icon-sub {
     color: var(--tt-button-default-icon-sub-color);
   }
@@ -219,6 +226,13 @@
       color: var(--tt-button-hover-icon-color);
     }
 
+    /* Dark mode hover state */
+    body.code-dark & {
+      .tiptap-button-icon {
+        color: #000000 !important;
+      }
+    }
+
     .tiptap-button-icon-sub {
       color: var(--tt-button-hover-icon-sub-color);
     }
@@ -237,6 +251,13 @@
 
     .tiptap-button-icon {
       color: var(--tt-button-active-icon-color);
+    }
+
+    /* Dark mode active state */
+    body.code-dark & {
+      .tiptap-button-icon {
+        color: #000000 !important;
+      }
     }
 
     .tiptap-button-icon-sub {

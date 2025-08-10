@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react"
 import { Button } from "@/components/tiptap-ui-primitive/button"
 import { FunctionSquareIcon } from "@/components/tiptap-icons/function-square-icon"
 import { useMathematics, type UseMathematicsConfig } from "./use-mathematics"
+import { MathInputModal } from "../math-input-modal/math-input-modal"
 
 export interface MathematicsButtonProps
   extends Omit<React.ComponentPropsWithoutRef<typeof Button>, "onClick" | "type">,
@@ -20,7 +21,15 @@ export function MathematicsButton({
   onInserted,
   ...props
 }: MathematicsButtonProps) {
-  const { isVisible, handleInsert, canInsert, label } = useMathematics({
+  const { 
+    isVisible, 
+    handleInsert, 
+    canInsert, 
+    isModalOpen,
+    handleModalSubmit,
+    handleModalCancel,
+    label 
+  } = useMathematics({
     editor,
     hideWhenUnavailable,
     type: mathType,
@@ -32,15 +41,24 @@ export function MathematicsButton({
   }
 
   return (
-    <Button
-      type="button"
-      data-style="ghost"
-      disabled={!canInsert}
-      onClick={handleInsert}
-      tooltip={label}
-      {...props}
-    >
-      <FunctionSquareIcon className="tiptap-button-icon" />
-    </Button>
+    <>
+      <Button
+        type="button"
+        data-style="ghost"
+        disabled={!canInsert}
+        onClick={handleInsert}
+        tooltip={label}
+        {...props}
+      >
+        <FunctionSquareIcon className="tiptap-button-icon" />
+      </Button>
+
+      <MathInputModal
+        isOpen={isModalOpen}
+        onClose={handleModalCancel}
+        onSubmit={handleModalSubmit}
+        type={mathType}
+      />
+    </>
   )
 } 

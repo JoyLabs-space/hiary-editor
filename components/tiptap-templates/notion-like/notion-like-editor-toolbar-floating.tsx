@@ -22,6 +22,8 @@ import {
 } from "@/components/tiptap-ui/text-align-button"
 import { TurnIntoDropdown } from "@/components/tiptap-ui/turn-into-dropdown"
 import { MathematicsButton } from "@/components/tiptap-ui/mathematics-button"
+import { TableButton } from "@/components/tiptap-ui/table-button"
+import { TableActionsDropdown } from "@/components/tiptap-ui/table-button/table-actions-dropdown"
 
 // --- Utils ---
 import { isSelectionValid } from "@/lib/tiptap-collab-utils"
@@ -113,8 +115,7 @@ export function NotionToolbarFloating() {
             hideWhenUnavailable={true}
           />
           <ColorTextPopover hideWhenUnavailable={true} />
-          <MathematicsButton type="inline" hideWhenUnavailable={true} />
-          <MathematicsButton type="block" hideWhenUnavailable={true} />
+          <TableActionsDropdown editor={editor} />
         </ToolbarGroup>
 
         <MoreOptions hideWhenUnavailable={true} />

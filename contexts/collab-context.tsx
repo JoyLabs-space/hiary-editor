@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { TiptapCollabProvider } from "@tiptap-pro/provider"
 import { Doc as YDoc } from "yjs"
 import {
   fetchCollabToken,
