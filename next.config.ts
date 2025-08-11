@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "export",          // static export 활성화 → out/ 생성
+  images: { unoptimized: true },
+  trailingSlash: true,
+  basePath: "/editor",
+  assetPrefix: "/editor/",
 };
 
 export default nextConfig;
