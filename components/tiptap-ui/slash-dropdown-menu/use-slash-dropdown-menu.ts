@@ -170,6 +170,15 @@ const texts = {
     group: "Insert",
   },
 
+  // Table utilities
+  table_add_row: {
+    title: "행 추가(아래)",
+    subtext: "현재 행 아래에 새 행을 추가",
+    aliases: ["row", "add row", "행 추가"],
+    badge: FunctionSquareIcon,
+    group: "Insert",
+  },
+
   // Upload
   image: {
     title: "Image",
@@ -214,22 +223,6 @@ const getItemImplementations = () => {
         editorChain.run()
 
         editor.chain().focus().aiGenerationShow().run()
-
-        requestAnimationFrame(() => {
-          const { hasContent, content } = hasContentAbove(editor)
-
-          const snippet =
-            content.length > 500 ? `...${content.slice(-500)}` : content
-
-          const prompt = hasContent
-            ? `Context: ${snippet}\n\nContinue writing from where the text above ends. Write ONLY ONE SENTENCE. DONT REPEAT THE TEXT.`
-            : "Start writing a new paragraph. Write ONLY ONE SENTENCE."
-
-          editor
-            .chain()
-            .focus()
-            .run()
-        })
       },
     },
     ai_ask_button: {
@@ -353,6 +346,12 @@ const getItemImplementations = () => {
       check: (editor: Editor) => isNodeInSchema("table", editor),
       action: ({ editor }: { editor: Editor }) => {
         editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      },
+    },
+    table_add_row: {
+      check: (editor: Editor) => editor.isActive('table'),
+      action: ({ editor }: { editor: Editor }) => {
+        editor.chain().focus().addRowAfter().run()
       },
     },
     // Upload
