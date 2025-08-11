@@ -11,6 +11,8 @@ interface MathInputModalProps {
   title: string
   placeholder: string
   example: string
+  // Optional display context (inline or block). Not used for logic here
+  type?: "block" | "inline"
 }
 
 export function MathInputModal({
@@ -72,7 +74,7 @@ export function MathInputModal({
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              variant="outline"
+              data-style="ghost"
               onClick={onClose}
               className="px-4 py-2"
             >

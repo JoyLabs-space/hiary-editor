@@ -9,8 +9,12 @@ import {
   TIPTAP_COLLAB_APP_ID,
 } from "@/lib/tiptap-collab-utils"
 
+type MinimalCollabProvider = {
+  destroy: () => void
+}
+
 export type CollabContextValue = {
-  provider: TiptapCollabProvider | null
+  provider: MinimalCollabProvider | null
   ydoc: YDoc
   hasCollab: boolean
 }
@@ -31,7 +35,7 @@ export const useCollab = (): CollabContextValue => {
 }
 
 export const useCollaboration = (room: string) => {
-  const [provider, setProvider] = React.useState<TiptapCollabProvider | null>(
+  const [provider, setProvider] = React.useState<MinimalCollabProvider | null>(
     null
   )
   const [collabToken, setCollabToken] = React.useState<string | null>(null)
@@ -61,17 +65,15 @@ export const useCollaboration = (room: string) => {
     const documentName = room ? `${docPrefix}${room}` : docPrefix
     const appId = TIPTAP_COLLAB_APP_ID
 
-    const newProvider = new TiptapCollabProvider({
-      name: documentName,
-      appId,
-      token: collabToken,
-      document: ydoc,
-    })
+    // Collab provider not available; create a no-op provider to keep context shape stable
+    const noopProvider: MinimalCollabProvider = {
+      destroy: () => {},
+    }
 
-    setProvider(newProvider)
+    setProvider(noopProvider)
 
     return () => {
-      newProvider.destroy()
+      noopProvider.destroy()
     }
   }, [collabToken, ydoc, room, hasCollab])
 

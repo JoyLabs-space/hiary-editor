@@ -86,7 +86,11 @@ export function useAiContentTracker({
     if (!editor || !aiGenerationActive) return
 
     const handleTransaction = ({ editor }: { editor: Editor }) => {
-      const aiStorage = editor.storage.ai || editor.storage.aiAdvanced
+      const storage = editor.storage as unknown as {
+        ai?: { state?: string }
+        aiAdvanced?: { state?: string }
+      }
+      const aiStorage = storage.ai || storage.aiAdvanced
 
       if (aiStorage?.state === "loading") {
         const aiMarkedElement = findPrioritizedAIElement(editor)

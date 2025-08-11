@@ -57,6 +57,9 @@ export function MathematicsButton({
         isOpen={isModalOpen}
         onClose={handleModalCancel}
         onSubmit={handleModalSubmit}
+        title={mathType === "inline" ? "인라인 수식 입력" : "블록 수식 입력"}
+        placeholder={mathType === "inline" ? "e.g. a^2 + b^2 = c^2" : "e.g. \\int_a^b f(x) dx"}
+        example={mathType === "inline" ? "a^2 + b^2 = c^2" : "\\sum_{i=1}^n i = n(n+1)/2"}
         type={mathType}
       />
     </>

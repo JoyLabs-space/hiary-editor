@@ -55,6 +55,7 @@ export const EmojiMenuItem = <T extends EmojiItem>(
       onClick={() => onSelect(emoji)}
     >
       {emoji.fallbackImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           className="tiptap-button-emoji"
           src={emoji.fallbackImage}

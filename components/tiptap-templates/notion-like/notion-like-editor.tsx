@@ -262,6 +262,25 @@ export function EditorContentArea() {
     }
   }, [editor])
 
+  // 부모 윈도우로 데이터를 전송하는 함수
+  const sendToParent = React.useCallback(
+    (type: string, data: Record<string, unknown>) => {
+      if (window.parent && window.parent !== window) {
+        console.log('DEBUG - sendToParent', data)
+        window.parent.postMessage(
+          {
+            type: 'EDITOR_JSON_DATA',
+            data,
+            source: 'notion-like-editor',
+            payload: data,
+          },
+          '*'
+        )
+      }
+    },
+    []
+  )
+
   // 부모로부터 메시지를 받는 리스너
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -297,20 +316,7 @@ export function EditorContentArea() {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [getDocumentAsJson, setEditorJsonData, setEditorJsonDataRead]);
-
-  // 부모 윈도우로 데이터를 전송하는 함수
-  const sendToParent = React.useCallback((type: string, data: Record<string, unknown>) => {
-    if (window.parent && window.parent !== window) {
-      console.log('DEBUG - sendToParent', data)
-      window.parent.postMessage({
-        type: 'EDITOR_JSON_DATA',
-        data,
-        source: 'notion-like-editor',
-        payload: data,
-      }, '*');
-    }
-  }, []);
+  }, [getDocumentAsJson, setEditorJsonData, setEditorJsonDataRead, sendToParent]);
 
 // iframe 프로젝트 코드 안에서
 React.useEffect(() => {
