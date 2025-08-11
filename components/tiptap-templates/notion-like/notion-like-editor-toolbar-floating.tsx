@@ -89,7 +89,7 @@ export function NotionToolbarFloating() {
     <FloatingElement shouldShow={shouldShow}>
       <Toolbar variant="floating">
         <ToolbarGroup>
-          <ImproveDropdown hideWhenUnavailable={true} />
+          {/* <ImproveDropdown hideWhenUnavailable={true} /> */}
         </ToolbarGroup>
 
         <ToolbarSeparator fixed />
@@ -116,8 +116,8 @@ export function NotionToolbarFloating() {
           />
           <ColorTextPopover hideWhenUnavailable={true} />
           <TableActionsDropdown editor={editor} />
-          <MathematicsButton type="inline" hideWhenUnavailable={true} />
-          <MathematicsButton type="block" hideWhenUnavailable={true} />
+          {/* <MathematicsButton type="inline" hideWhenUnavailable={true} />
+          <MathematicsButton type="block" hideWhenUnavailable={true} /> */}
         </ToolbarGroup>
 
         <MoreOptions hideWhenUnavailable={true} />

@@ -4,14 +4,17 @@
       border-collapse: collapse;
       margin: 0;
       overflow: hidden;
-      table-layout: fixed;
-      width: 100%;
+      /* 열 추가 시 전체 테이블이 오른쪽으로 확장되도록 */
+      table-layout: auto;
+      width: max-content;
+      transition: width 180ms ease;
 
       td,
       th {
         border: 2px solid #ced4da;
         box-sizing: border-box;
-        min-width: 1em;
+        /* 셀 기본 폭을 보장하여 열 추가 시 오른쪽으로 확장 */
+        min-width: 120px;
         padding: 3px 5px;
         position: relative;
         vertical-align: top;
@@ -71,6 +74,7 @@
   .tableWrapper {
     margin: 1em 0;
     overflow-x: auto;
+    max-width: 100%;
   }
 
   .resize-cursor {

@@ -464,17 +464,22 @@ body.code-dark {
     border-collapse: collapse;
     margin: 0;
     overflow: hidden;
-    table-layout: fixed;
-    width: 100%;
+    /* 열 추가 시 가로로 자연스럽게 확장되도록 */
+    table-layout: auto;
+    width: max-content;
+    max-width: 100%;
+    transition: width 180ms ease;
 
     td,
     th {
       border: 1px solid #e1e4e8;
       box-sizing: border-box;
-      min-width: 1em;
+      /* 기본 셀 폭을 보장하여 열 추가가 오른쪽으로 확장 */
+      min-width: 120px;
       padding: 6px 8px;
       position: relative;
       vertical-align: top;
+      max-width: 100%;
 
       > * {
         margin-bottom: 0;

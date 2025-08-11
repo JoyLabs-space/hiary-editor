@@ -7,7 +7,6 @@ import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
 import { Image } from "@tiptap/extension-image"
-import { Mention } from "@tiptap/extension-mention"
 import { TaskList, TaskItem } from "@tiptap/extension-list"
 import { Color, TextStyle } from "@tiptap/extension-text-style"
 import { Placeholder, Selection } from "@tiptap/extensions"
@@ -40,7 +39,6 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 
 // --- Tiptap UI ---
 import { EmojiDropdownMenu } from "@/components/tiptap-ui/emoji-dropdown-menu"
-import { MentionDropdownMenu } from "@/components/tiptap-ui/mention-dropdown-menu"
 import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu"
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
 import { AiMenu } from "@/components/tiptap-ui/ai-menu"
@@ -49,7 +47,7 @@ import { PasteModal } from "@/components/tiptap-ui/paste-modal/paste-modal"
 
 // --- Contexts ---
 import { AppProvider } from "@/contexts/app-context"
-import { UserProvider, useUser } from "@/contexts/user-context"
+import { UserProvider } from "@/contexts/user-context"
 import { CollabProvider, useCollab } from "@/contexts/collab-context"
 import { AiProvider, useAi } from "@/contexts/ai-context"
 
@@ -94,6 +92,9 @@ import rust from "highlight.js/lib/languages/rust";
 import swift from "highlight.js/lib/languages/swift";
 import kotlin from "highlight.js/lib/languages/kotlin";
 import { TapIndent } from "@/components/tiptap-ui/tap-indent/tap-indent"
+import { TableHoverControls } from "@/components/tiptap-ui/table-hover-controls/table-hover-controls"
+
+// removed unused React hooks imports
 
 lowlight.registerLanguage("css", css);
 lowlight.registerLanguage("js", js);
@@ -350,10 +351,10 @@ React.useEffect(() => {
         <DragContextMenu />
         <AiMenu />
         <EmojiDropdownMenu />
-        <MentionDropdownMenu />
         <SlashDropdownMenu />
         <NotionToolbarFloating />
         <CodeBlockLanguageDropdown editor={editor} />
+        <TableHoverControls editor={editor} />
       </EditorContent>
       
       {/* 붙여넣기 모달 */}
@@ -372,9 +373,7 @@ React.useEffect(() => {
  * Component that creates and provides the editor instance
  */
 export function EditorProvider(props: EditorProviderProps) {
-  const { placeholder = "Start writing...", aiToken } = props
-
-  const { user } = useUser()
+  const { placeholder = "Start writing...", aiToken: _aiToken } = props
 
   // Build extensions conditionally
   const extensions = [
@@ -391,7 +390,6 @@ export function EditorProvider(props: EditorProviderProps) {
       placeholder,
       emptyNodeClass: "is-empty with-slash",
     }),
-    Mention,
     Emoji.configure({
       emojis: gitHubEmojis.filter(
         (emoji) => !emoji.name.includes("regional")
@@ -470,9 +468,61 @@ export function EditorProvider(props: EditorProviderProps) {
       attributes: {
         class: "notion-like-editor",
       },
+      handlePaste(view, event, _slice) {
+        const clipboardData = event.clipboardData
+        if (!clipboardData) return false
+
+        const imageFiles: File[] = []
+
+        // Prefer files if available
+        if (clipboardData.files && clipboardData.files.length > 0) {
+          for (let i = 0; i < clipboardData.files.length; i++) {
+            const file = clipboardData.files[i]
+            if (file && file.type?.startsWith("image/")) {
+              imageFiles.push(file)
+            }
+          }
+        } else if (clipboardData.items && clipboardData.items.length > 0) {
+          for (let i = 0; i < clipboardData.items.length; i++) {
+            const item = clipboardData.items[i]
+            if (item.kind === "file") {
+              const file = item.getAsFile()
+              if (file && file.type?.startsWith("image/")) {
+                imageFiles.push(file)
+              }
+            }
+          }
+        }
+
+        if (imageFiles.length === 0) {
+          return false
+        }
+
+        // We will handle the paste ourselves
+        event.preventDefault()
+
+        imageFiles.forEach(async (file) => {
+          try {
+            const url = await handleImageUpload(file)
+            const { state } = view
+            const imageNode = state.schema.nodes.image.create({
+              src: url,
+              alt: file.name?.replace(/\.[^/.]+$/, "") || "image",
+              title: file.name || "image",
+            })
+            const tr = state.tr.replaceSelectionWith(imageNode).scrollIntoView()
+            view.dispatch(tr)
+          } catch (error) {
+            console.error("Paste image upload failed:", error)
+          }
+        })
+
+        return true
+      },
     },
     extensions,
   })
+  // removed unused addRow helper
 
   if (!editor) {
     return <LoadingSpinner />
@@ -511,7 +561,7 @@ export function NotionEditor({
  * Internal component that handles the editor loading state
  */
 export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
-  const { provider, ydoc, hasCollab } = useCollab()
+  const { provider, hasCollab } = useCollab()
   const { aiToken, hasAi } = useAi()
 
   // Show loading only if collab or AI features are enabled but tokens are still loading
