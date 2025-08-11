@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { type Editor } from "@tiptap/react"
-import type { Language, TextOptions, Tone } from "@tiptap-pro/extension-ai"
+import type { Language, TextOptions, Tone } from "../ai-menu/ai-types"
 import { NodeSelection } from "@tiptap/pm/state"
 
 // --- Hooks ---
@@ -213,30 +213,82 @@ function useAICommands(editor: Editor | null, textOptions?: TextOptions) {
     (command: AICommand) => {
       if (!editor) return
 
-      editor.chain().focus().aiGenerationShow().run()
+      const chainAny = editor.chain().focus() as unknown as {
+        aiGenerationShow?: () => { run: () => boolean }
+      }
+      if (typeof chainAny.aiGenerationShow === "function") {
+        chainAny.aiGenerationShow().run()
+      }
 
       setTimeout(() => {
         switch (command) {
           case "fixSpellingAndGrammar":
-            editor.commands.aiFixSpellingAndGrammar(defaultOptions)
+            const cmds = editor.commands as unknown as {
+              aiFixSpellingAndGrammar?: (options: unknown) => void
+            }
+            if (typeof cmds.aiFixSpellingAndGrammar === "function") {
+              cmds.aiFixSpellingAndGrammar(defaultOptions)
+            }
             break
           case "extend":
-            editor.commands.aiExtend(defaultOptions)
+            {
+              const cmds = editor.commands as unknown as {
+                aiExtend?: (options: unknown) => void
+              }
+              if (typeof cmds.aiExtend === "function") {
+                cmds.aiExtend(defaultOptions)
+              }
+            }
             break
           case "shorten":
-            editor.commands.aiShorten(defaultOptions)
+            {
+              const cmds = editor.commands as unknown as {
+                aiShorten?: (options: unknown) => void
+              }
+              if (typeof cmds.aiShorten === "function") {
+                cmds.aiShorten(defaultOptions)
+              }
+            }
             break
           case "simplify":
-            editor.commands.aiSimplify(defaultOptions)
+            {
+              const cmds = editor.commands as unknown as {
+                aiSimplify?: (options: unknown) => void
+              }
+              if (typeof cmds.aiSimplify === "function") {
+                cmds.aiSimplify(defaultOptions)
+              }
+            }
             break
           case "emojify":
-            editor.commands.aiEmojify(defaultOptions)
+            {
+              const cmds = editor.commands as unknown as {
+                aiEmojify?: (options: unknown) => void
+              }
+              if (typeof cmds.aiEmojify === "function") {
+                cmds.aiEmojify(defaultOptions)
+              }
+            }
             break
           case "complete":
-            editor.commands.aiComplete(defaultOptions)
+            {
+              const cmds = editor.commands as unknown as {
+                aiComplete?: (options: unknown) => void
+              }
+              if (typeof cmds.aiComplete === "function") {
+                cmds.aiComplete(defaultOptions)
+              }
+            }
             break
           case "summarize":
-            editor.commands.aiSummarize(defaultOptions)
+            {
+              const cmds = editor.commands as unknown as {
+                aiSummarize?: (options: unknown) => void
+              }
+              if (typeof cmds.aiSummarize === "function") {
+                cmds.aiSummarize(defaultOptions)
+              }
+            }
             break
         }
       }, 0)
@@ -247,10 +299,20 @@ function useAICommands(editor: Editor | null, textOptions?: TextOptions) {
   const adjustTone = React.useCallback(
     (tone: Tone) => {
       if (!editor) return
-      editor.chain().focus().aiGenerationShow().run()
+      const chainAny = editor.chain().focus() as unknown as {
+        aiGenerationShow?: () => { run: () => boolean }
+      }
+      if (typeof chainAny.aiGenerationShow === "function") {
+        chainAny.aiGenerationShow().run()
+      }
 
       setTimeout(() => {
-        editor.commands.aiAdjustTone(tone, defaultOptions)
+        const cmds = editor.commands as unknown as {
+          aiAdjustTone?: (tone: unknown, options: unknown) => void
+        }
+        if (typeof cmds.aiAdjustTone === "function") {
+          cmds.aiAdjustTone(tone, defaultOptions)
+        }
       }, 0)
     },
     [editor, defaultOptions]
@@ -259,10 +321,20 @@ function useAICommands(editor: Editor | null, textOptions?: TextOptions) {
   const translate = React.useCallback(
     (language: Language) => {
       if (!editor) return
-      editor.chain().focus().aiGenerationShow().run()
+      const chainAny = editor.chain().focus() as unknown as {
+        aiGenerationShow?: () => { run: () => boolean }
+      }
+      if (typeof chainAny.aiGenerationShow === "function") {
+        chainAny.aiGenerationShow().run()
+      }
 
       setTimeout(() => {
-        editor.commands.aiTranslate(language, defaultOptions)
+        const cmds = editor.commands as unknown as {
+          aiTranslate?: (language: unknown, options: unknown) => void
+        }
+        if (typeof cmds.aiTranslate === "function") {
+          cmds.aiTranslate(language, defaultOptions)
+        }
       }, 0)
     },
     [editor, defaultOptions]

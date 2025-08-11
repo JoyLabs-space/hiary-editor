@@ -1,5 +1,5 @@
 import type { Action } from "@/components/tiptap-ui-primitive/menu"
-import { type TextOptions } from "@tiptap-pro/extension-ai"
+import { type TextOptions } from "../ai-types"
 import type { Editor } from "@tiptap/react"
 
 export interface MenuActionBase {

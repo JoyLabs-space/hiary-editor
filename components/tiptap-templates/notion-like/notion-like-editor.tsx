@@ -297,7 +297,7 @@ export function EditorContentArea() {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [getDocumentAsJson, setEditorJsonData]);
+  }, [getDocumentAsJson, setEditorJsonData, setEditorJsonDataRead]);
 
   // 부모 윈도우로 데이터를 전송하는 함수
   const sendToParent = React.useCallback((type: string, data: Record<string, unknown>) => {
@@ -373,7 +373,7 @@ React.useEffect(() => {
  * Component that creates and provides the editor instance
  */
 export function EditorProvider(props: EditorProviderProps) {
-  const { placeholder = "Start writing...", aiToken: _aiToken } = props
+  const { placeholder = "Start writing..." } = props
 
   // Build extensions conditionally
   const extensions = [
@@ -468,7 +468,7 @@ export function EditorProvider(props: EditorProviderProps) {
       attributes: {
         class: "notion-like-editor",
       },
-      handlePaste(view, event, _slice) {
+      handlePaste(view, event) {
         const clipboardData = event.clipboardData
         if (!clipboardData) return false
 

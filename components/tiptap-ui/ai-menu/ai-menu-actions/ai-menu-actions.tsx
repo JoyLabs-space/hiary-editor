@@ -6,7 +6,8 @@ import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
 import { RefreshAiIcon } from "@/components/tiptap-icons/refresh-ai-icon"
 import { XIcon } from "@/components/tiptap-icons/x-icon"
 import { CheckIcon } from "@/components/tiptap-icons/check-icon"
-import type { TextOptions } from "@tiptap-pro/extension-ai"
+// Local minimal options type to avoid requiring the Pro package during build
+type TextOptions = Record<string, unknown>
 import { useUiEditorState } from "@/hooks/use-ui-editor-state"
 
 import "@/components/tiptap-ui/ai-menu/ai-menu-actions/ai-menu-actions.scss"
@@ -30,19 +31,34 @@ export function AiMenuActions({
 
   const handleRegenerate = React.useCallback(() => {
     if (!editor) return
-    editor.chain().focus().aiRegenerate(options).run()
+    const chainAny = editor.chain().focus() as unknown as {
+      aiRegenerate?: (options: unknown) => { run: () => boolean }
+    }
+    if (typeof chainAny.aiRegenerate === "function") {
+      chainAny.aiRegenerate(options).run()
+    }
     onRegenerate?.()
   }, [editor, onRegenerate, options])
 
   const handleDiscard = React.useCallback(() => {
     if (!editor) return
-    editor.chain().focus().aiReject().run()
+    const chainAny = editor.chain().focus() as unknown as {
+      aiReject?: () => { run: () => boolean }
+    }
+    if (typeof chainAny.aiReject === "function") {
+      chainAny.aiReject().run()
+    }
     onReject?.()
   }, [editor, onReject])
 
   const handleApply = React.useCallback(() => {
     if (!editor) return
-    editor.chain().focus().aiAccept().run()
+    const chainAny = editor.chain().focus() as unknown as {
+      aiAccept?: () => { run: () => boolean }
+    }
+    if (typeof chainAny.aiAccept === "function") {
+      chainAny.aiAccept().run()
+    }
     onAccept?.()
   }, [editor, onAccept])
 

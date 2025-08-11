@@ -2,8 +2,7 @@
 
 import * as React from "react"
 import { type Editor } from "@tiptap/react"
-import type { TextOptions } from "@tiptap-pro/extension-ai"
-import { type Language } from "@tiptap-pro/extension-ai"
+import type { TextOptions, Language } from "../ai-types"
 
 // -- Hooks --
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
@@ -86,7 +85,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiFixSpellingAndGrammar(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiFixSpellingAndGrammar?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiFixSpellingAndGrammar === "function") {
+          chainAny.aiFixSpellingAndGrammar(newOptions).run()
+        }
       },
     },
     aiExtend: {
@@ -108,7 +112,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiExtend(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiExtend?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiExtend === "function") {
+          chainAny.aiExtend(newOptions).run()
+        }
       },
     },
     aiShorten: {
@@ -130,7 +139,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiShorten(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiShorten?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiShorten === "function") {
+          chainAny.aiShorten(newOptions).run()
+        }
       },
     },
     simplifyLanguage: {
@@ -152,7 +166,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiSimplify(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiSimplify?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiSimplify === "function") {
+          chainAny.aiSimplify(newOptions).run()
+        }
       },
     },
     improveWriting: {
@@ -174,7 +193,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiRephrase(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiRephrase?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiRephrase === "function") {
+          chainAny.aiRephrase(newOptions).run()
+        }
       },
     },
     emojify: {
@@ -196,7 +220,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiEmojify(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiEmojify?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiEmojify === "function") {
+          chainAny.aiEmojify(newOptions).run()
+        }
       },
     },
     continueWriting: {
@@ -218,7 +247,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiComplete(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiComplete?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiComplete === "function") {
+          chainAny.aiComplete(newOptions).run()
+        }
       },
     },
     summarize: {
@@ -240,7 +274,12 @@ function initializeEditorMenuActions(): Record<
           newOptions.text = context
         }
 
-        editor.chain().aiSummarize(newOptions).run()
+        const chainAny = editor.chain() as unknown as {
+          aiSummarize?: (options: unknown) => { run: () => boolean }
+        }
+        if (typeof chainAny.aiSummarize === "function") {
+          chainAny.aiSummarize(newOptions).run()
+        }
       },
     },
     translateTo: {
@@ -339,7 +378,12 @@ export function LanguageSelectionSubmenu({
         langOptions.text = context
       }
 
-      editor.chain().aiTranslate(selectedLanguageCode, langOptions).run()
+      const chainAny = editor.chain() as unknown as {
+        aiTranslate?: (lang: unknown, options: unknown) => { run: () => boolean }
+      }
+      if (typeof chainAny.aiTranslate === "function") {
+        chainAny.aiTranslate(selectedLanguageCode, langOptions).run()
+      }
     },
     [editor, state.tone, updateState]
   )
@@ -435,7 +479,12 @@ export function ToneSelectionSubmenu({ editor }: { editor: Editor | null }) {
         toneOptions.text = context
       }
 
-      editor.chain().aiAdjustTone(selectedTone, toneOptions).run()
+      const chainAny = editor.chain() as unknown as {
+        aiAdjustTone?: (tone: unknown, options: unknown) => { run: () => boolean }
+      }
+      if (typeof chainAny.aiAdjustTone === "function") {
+        chainAny.aiAdjustTone(selectedTone, toneOptions).run()
+      }
     },
     [editor, state.language, state.tone, updateState]
   )

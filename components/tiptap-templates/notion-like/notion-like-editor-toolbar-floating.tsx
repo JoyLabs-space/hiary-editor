@@ -11,7 +11,6 @@ import { MoreVerticalIcon } from "@/components/tiptap-icons/more-vertical-icon"
 
 // --- UI ---
 import { ColorTextPopover } from "@/components/tiptap-ui/color-text-popover"
-import { ImproveDropdown } from "@/components/tiptap-ui/improve-dropdown"
 import { LinkPopover } from "@/components/tiptap-ui/link-popover"
 import type { Mark } from "@/components/tiptap-ui/mark-button"
 import { canToggleMark, MarkButton } from "@/components/tiptap-ui/mark-button"
@@ -21,8 +20,6 @@ import {
   TextAlignButton,
 } from "@/components/tiptap-ui/text-align-button"
 import { TurnIntoDropdown } from "@/components/tiptap-ui/turn-into-dropdown"
-import { MathematicsButton } from "@/components/tiptap-ui/mathematics-button"
-import { TableButton } from "@/components/tiptap-ui/table-button"
 import { TableActionsDropdown } from "@/components/tiptap-ui/table-button/table-actions-dropdown"
 
 // --- Utils ---

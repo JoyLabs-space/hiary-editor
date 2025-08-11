@@ -5,10 +5,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/tiptap-ui-
 import { Toolbar, ToolbarGroup, ToolbarSeparator } from '@/components/tiptap-ui-primitive/toolbar'
 
 interface TableActionsDropdownProps {
-  editor: Editor
+  editor?: Editor | null
 }
 
 export const TableActionsDropdown: React.FC<TableActionsDropdownProps> = ({ editor }) => {
+  if (!editor) return null
   const isInTable = editor.isActive('table')
 
   const addRowBefore = () => editor.chain().focus().addRowBefore().run()

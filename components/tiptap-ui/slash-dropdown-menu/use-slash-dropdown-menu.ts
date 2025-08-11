@@ -222,7 +222,12 @@ const getItemImplementations = () => {
 
         editorChain.run()
 
-        editor.chain().focus().aiGenerationShow().run()
+        const chainAny = editor.chain().focus() as unknown as {
+          aiGenerationShow?: () => { run: () => boolean }
+        }
+        if (typeof chainAny.aiGenerationShow === "function") {
+          chainAny.aiGenerationShow().run()
+        }
       },
     },
     ai_ask_button: {
@@ -239,7 +244,12 @@ const getItemImplementations = () => {
 
         editorChain.run()
 
-        editor.chain().focus().aiGenerationShow().run()
+        const chainAny = editor.chain().focus() as unknown as {
+          aiGenerationShow?: () => { run: () => boolean }
+        }
+        if (typeof chainAny.aiGenerationShow === "function") {
+          chainAny.aiGenerationShow().run()
+        }
       },
     },
 

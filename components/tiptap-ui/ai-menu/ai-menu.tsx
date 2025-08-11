@@ -97,16 +97,20 @@ export function AiMenuContent({
         }
       }
 
-      editor
-        .chain()
-        .aiTextPrompt({
-          text: promptWithContext,
-          insert: true,
-          stream: true,
-          tone: state.tone,
-          format: "rich-text",
-        })
-        .run()
+      const chainAny = editor.chain() as unknown as {
+        aiTextPrompt?: (options: unknown) => { run: () => boolean }
+      }
+      if (typeof chainAny.aiTextPrompt === "function") {
+        chainAny
+          .aiTextPrompt({
+            text: promptWithContext,
+            insert: true,
+            stream: true,
+            tone: state.tone,
+            format: "rich-text",
+          })
+          .run()
+      }
     },
     [editor, state.tone, state.fallbackAnchor, setFallbackAnchor]
   )
@@ -127,22 +131,40 @@ export function AiMenuContent({
 
   const handleOnReject = React.useCallback(() => {
     if (!editor) return
-    editor.commands.aiReject()
+    const cmds = editor.commands as unknown as {
+      aiReject?: () => void
+    }
+    if (typeof cmds.aiReject === "function") {
+      cmds.aiReject()
+    }
     closeAiMenu()
   }, [closeAiMenu, editor])
 
   const handleOnAccept = React.useCallback(() => {
     if (!editor) return
-    editor.commands.aiAccept()
+    const cmds = editor.commands as unknown as {
+      aiAccept?: () => void
+    }
+    if (typeof cmds.aiAccept === "function") {
+      cmds.aiAccept()
+    }
     closeAiMenu()
   }, [closeAiMenu, editor])
 
   const handleInputOnClose = React.useCallback(() => {
     if (!editor) return
+    const cmds = editor.commands as unknown as {
+      aiReject?: (options: unknown) => void
+      aiAccept?: () => void
+    }
     if (aiGenerationIsLoading) {
-      editor.commands.aiReject({ type: "reset" })
+      if (typeof cmds.aiReject === "function") {
+        cmds.aiReject({ type: "reset" })
+      }
     } else {
-      editor.commands.aiAccept()
+      if (typeof cmds.aiAccept === "function") {
+        cmds.aiAccept()
+      }
     }
     closeAiMenu()
   }, [aiGenerationIsLoading, closeAiMenu, editor])
@@ -152,7 +174,12 @@ export function AiMenuContent({
       closeAiMenu()
 
       if (!editor) return
-      editor.commands.aiAccept()
+      const cmds = editor.commands as unknown as {
+        aiAccept?: () => void
+      }
+      if (typeof cmds.aiAccept === "function") {
+        cmds.aiAccept()
+      }
     }
   }, [aiGenerationIsLoading, closeAiMenu, editor])
 
@@ -274,7 +301,12 @@ export function AiMenuProgress({ editor }: { editor: Editor }) {
   const handleStop = React.useCallback(() => {
     if (!editor) return
 
-    editor.chain().aiReject({ type: "reset" }).run()
+    const chainAny = editor.chain() as unknown as {
+      aiReject?: (options: unknown) => { run: () => boolean }
+    }
+    if (typeof chainAny.aiReject === "function") {
+      chainAny.aiReject({ type: "reset" }).run()
+    }
     reset()
     editor.commands.resetUiState()
   }, [editor, reset])

@@ -47,7 +47,7 @@ const useAvatarContext = () => {
 }
 
 const useImageLoadingStatus = (
-  src?: string,
+  src?: string | Blob,
   referrerPolicy?: React.HTMLAttributeReferrerPolicy
 ): ImageLoadingStatus => {
   const [loadingStatus, setLoadingStatus] =
@@ -61,6 +61,7 @@ const useImageLoadingStatus = (
 
     let isMounted = true
     const image = new window.Image()
+    let objectUrlToRevoke: string | null = null
 
     const updateStatus = (status: ImageLoadingStatus) => () => {
       if (!isMounted) return
@@ -70,11 +71,19 @@ const useImageLoadingStatus = (
     setLoadingStatus("loading")
     image.onload = updateStatus("loaded")
     image.onerror = updateStatus("error")
-    image.src = src
+    if (src instanceof Blob) {
+      objectUrlToRevoke = URL.createObjectURL(src)
+      image.src = objectUrlToRevoke
+    } else {
+      image.src = src
+    }
     if (referrerPolicy) image.referrerPolicy = referrerPolicy
 
     return () => {
       isMounted = false
+      if (objectUrlToRevoke) {
+        URL.revokeObjectURL(objectUrlToRevoke)
+      }
     }
   }, [src, referrerPolicy])
 
@@ -131,7 +140,14 @@ Avatar.displayName = "Avatar"
 export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
   ({ onLoadingStatusChange, src, className = "", ...props }, ref) => {
     const { onImageLoadingStatusChange } = useAvatarContext()
-    const imageLoadingStatus = useImageLoadingStatus(src, props.referrerPolicy)
+    const normalizedSrc: string | Blob | undefined = src as unknown as
+      | string
+      | Blob
+      | undefined
+    const imageLoadingStatus = useImageLoadingStatus(
+      normalizedSrc,
+      props.referrerPolicy
+    )
 
     React.useLayoutEffect(() => {
       if (imageLoadingStatus !== "idle") {
@@ -146,7 +162,7 @@ export const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
       <img
         {...props}
         ref={ref}
-        src={src}
+        src={typeof normalizedSrc === "string" ? normalizedSrc : undefined}
         className={`tiptap-avatar-image ${className}`}
       />
     )
