@@ -1,0 +1,53 @@
+name: Deploy to S3
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-2
+  S3_BUCKET: hiary-cloud-editor
+  # 프로젝트에 맞게 조정 가능
+  BUILD_COMMAND: npm ci && npm run build
+  BUILD_DIR: dist
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC 토큰 발급 권한
+      contents: read    # 저장소 읽기 권한
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build
+        run: ${{ env.BUILD_COMMAND }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install AWS CLI
+        run: pip install --upgrade awscli
+
+      - name: Sync to S3
+        run: aws s3 sync ${{ env.BUILD_DIR }} s3://${{ env.S3_BUCKET }} --delete
+
+
