@@ -9,7 +9,7 @@ export type AiContextValue = {
 }
 
 export const AiContext = React.createContext<AiContextValue>({
-  hasAi: false,
+  hasAi: true,
   aiToken: null,
 })
 

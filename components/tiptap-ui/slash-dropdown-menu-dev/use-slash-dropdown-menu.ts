@@ -231,8 +231,11 @@ const getItemImplementations = () => {
   return {
     // AI
     one_line_summary: {
-      // DEV: 항상 노출 (배포 환경에서 조건 이슈 방지)
-      check: () => true,
+      // DEV: Pro 의존성 제거. 텍스트 상단에 콘텐츠만 있으면 노출
+      check: (editor: Editor) => {
+        const { hasContent } = hasContentAbove(editor)
+        return hasContent
+      },
       action: ({ editor }: { editor: Editor }) => {
         try {
           const payload = buildSummaryPayload(editor)
@@ -251,8 +254,10 @@ const getItemImplementations = () => {
       },
     },
     three_line_summary: {
-      // DEV: 항상 노출 (배포 환경에서 조건 이슈 방지)
-      check: () => true,
+      check: (editor: Editor) => {
+        const { hasContent } = hasContentAbove(editor)
+        return hasContent
+      },
       action: ({ editor }: { editor: Editor }) => {
         try {
           const payload = buildSummaryPayload(editor)
