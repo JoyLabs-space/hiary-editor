@@ -206,6 +206,7 @@ export function EditorContentAreaDev() {
               "one_line_summary",
               "three_line_summary",
               "img_2_math_eq",
+              "hiaryAI",
               // Common
               "text",
               "heading_1",

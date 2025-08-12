@@ -503,6 +503,38 @@ export function useSlashDropdownMenu(config?: SlashMenuConfig) {
         }
       })
 
+      const three_line_summaryImpl = itemImplementations["three_line_summary"]
+      const one_line_summaryImpl = itemImplementations["one_line_summary"]
+      const img_2_math_eqImpl = itemImplementations["img_2_math_eq"]
+      const three_line_summaryText = texts["three_line_summary"]
+      const one_line_summaryText = texts["one_line_summary"]
+      const img_2_math_eqText = texts["img_2_math_eq"]
+      
+      if (three_line_summaryImpl && three_line_summaryText && three_line_summaryImpl.check(editor)) {
+        const item: SuggestionItem = {
+          onSelect: ({ editor }) => three_line_summaryImpl.action({ editor }),
+          ...three_line_summaryText,
+        }
+        item.group = "hiaryAI"
+        items.push(item)
+      }
+      if (one_line_summaryImpl && one_line_summaryText && one_line_summaryImpl.check(editor)) {
+        const item: SuggestionItem = {
+          onSelect: ({ editor }) => one_line_summaryImpl.action({ editor }),
+          ...one_line_summaryText,
+        }
+        item.group = "hiaryAI"
+        items.push(item)
+      }
+      // if (img_2_math_eqImpl && img_2_math_eqText && img_2_math_eqImpl.check(editor)) {
+      //   const item: SuggestionItem = {
+      //     onSelect: ({ editor }) => img_2_math_eqImpl.action({ editor }),
+      //     ...img_2_math_eqText,
+      //   }
+      //   item.group = "hiaryAI"
+      //   items.push(item)
+      // }
+
       if (config?.customItems) {
         items.push(...config.customItems)
       }
