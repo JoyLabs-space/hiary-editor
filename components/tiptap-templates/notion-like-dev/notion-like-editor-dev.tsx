@@ -37,9 +37,9 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 
 // --- Tiptap UI ---
 import { EmojiDropdownMenu } from "@/components/tiptap-ui/emoji-dropdown-menu"
-import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu"
+import { SlashDropdownMenuDev as SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu-dev"
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
-import { AiMenu } from "@/components/tiptap-ui/ai-menu"
+import { AiMenuDev as AiMenu } from "@/components/tiptap-ui/ai-menu-dev"
 import { useMathModal, MathInputModal } from "@/components/tiptap-ui/math-input-modal"
 import { PasteModal } from "@/components/tiptap-ui/paste-modal/paste-modal"
 
