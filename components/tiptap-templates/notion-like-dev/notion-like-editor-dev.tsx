@@ -39,15 +39,17 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 import { EmojiDropdownMenu } from "@/components/tiptap-ui/emoji-dropdown-menu"
 import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu-dev" // 나중에는 dev 빼야함.
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
-import { AiMenu } from "@/components/tiptap-ui/ai-menu-dev" // 나중에는 dev 빼야함.
+import { AiMenu } from "@/components/tiptap-ui/ai-menu-dev/ai-menu" // 나중에는 dev 빼야함.
 import { useMathModal, MathInputModal } from "@/components/tiptap-ui/math-input-modal"
 import { PasteModal } from "@/components/tiptap-ui/paste-modal/paste-modal"
 
 // --- Contexts ---
 import { AppProvider } from "@/contexts/app-context"
 import { UserProvider } from "@/contexts/user-context"
-import { CollabProvider, useCollab } from "@/contexts/collab-context"
-import { AiProvider, useAi } from "@/contexts/ai-context"
+// Use DEV overrides to avoid any TipTap Pro/Cloud calls
+import { CollabProviderDev as CollabProvider, AiProviderDev as AiProvider } from "@/components/tiptap-templates/notion-like-dev/dev-context-overrides"
+import { useCollab } from "@/contexts/collab-context"
+import { useAi } from "@/contexts/ai-context"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"

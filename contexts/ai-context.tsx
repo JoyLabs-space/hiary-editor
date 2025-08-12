@@ -24,11 +24,10 @@ export const useAi = (): AiContextValue => {
 
 export const useAiToken = () => {
   const [aiToken, setAiToken] = React.useState<string | null>(null)
-  const [hasAi, setHasAi] = React.useState<boolean>(true)
+  const [hasAi, setHasAi] = React.useState<boolean>(false)
 
   React.useEffect(() => {
-    // const enableAiParam = getUrlParam("enableAi")
-    // console.log("enableAiParam", enableAiParam)
+    const enableAiParam = getUrlParam("enableAi")
     setHasAi(true)
   }, [])
 

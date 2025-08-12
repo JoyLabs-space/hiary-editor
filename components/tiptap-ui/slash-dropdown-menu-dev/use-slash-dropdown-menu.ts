@@ -450,8 +450,31 @@ export function useSlashDropdownMenu(config?: SlashMenuConfig) {
     (editor: Editor) => {
       const items: SuggestionItem[] = []
 
-      const enabledItems =
-        config?.enabledItems || (Object.keys(texts) as SlashMenuItemType[])
+      // DEV: if enabledItems not provided, force include AI keys and common keys
+      const defaultItems: SlashMenuItemType[] = [
+        "one_line_summary",
+        "three_line_summary",
+        "img_2_math_eq",
+        "text",
+        "heading_1",
+        "heading_2",
+        "heading_3",
+        "bullet_list",
+        "ordered_list",
+        "task_list",
+        "quote",
+        "code_block",
+        "mention",
+        "emoji",
+        "divider",
+        "inline_math",
+        "block_math",
+        "table",
+        "table_add_row",
+        "image",
+      ]
+
+      const enabledItems = config?.enabledItems || defaultItems
       const showGroups = config?.showGroups !== false
 
       // Debug logs removed

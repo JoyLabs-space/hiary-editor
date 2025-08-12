@@ -43,19 +43,12 @@ export const useCollaboration = (room: string) => {
   const ydoc = React.useMemo(() => new YDoc(), [])
 
   React.useEffect(() => {
-    const enableCollabParam = getUrlParam("enableCollab")
-    setHasCollab(parseInt(enableCollabParam || "0") === 1)
+    // DEV override: disable collaboration entirely
+    setHasCollab(false)
   }, [])
 
   React.useEffect(() => {
-    if (!hasCollab) return
-
-    const getToken = async () => {
-      const token = await fetchCollabToken()
-      setCollabToken(token)
-    }
-
-    getToken()
+    // no token in dev
   }, [hasCollab])
 
   React.useEffect(() => {
