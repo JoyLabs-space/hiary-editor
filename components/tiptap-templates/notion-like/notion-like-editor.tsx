@@ -554,9 +554,9 @@ export function NotionEditor({
     <UserProvider>
       <AppProvider>
         <CollabProvider room={room}>
-          <AiProvider>
-            <NotionEditorContent placeholder={placeholder} />
-          </AiProvider>
+          {/* <AiProvider> */}
+          <NotionEditorContent placeholder={placeholder} />
+          {/* </AiProvider> */}
         </CollabProvider>
       </AppProvider>
     </UserProvider>
