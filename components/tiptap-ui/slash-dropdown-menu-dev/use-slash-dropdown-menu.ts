@@ -486,6 +486,19 @@ export function useSlashDropdownMenu(config?: SlashMenuConfig) {
 
       const itemImplementations = getItemImplementations()
 
+      aiItems.forEach((itemType) => {
+        const itemImpl = itemImplementations[itemType]
+        const itemText = texts[itemType]
+        if (itemImpl && itemText && itemImpl.check(editor)) {
+          const item: SuggestionItem = {
+            onSelect: ({ editor }) => itemImpl.action({ editor }),
+            ...itemText,
+          }
+          item.group = "hiaryAI"
+          items.push(item)
+        }
+      })
+
       enabledItems.forEach((itemType) => {
         const itemImpl = itemImplementations[itemType]
         const itemText = texts[itemType]
@@ -504,19 +517,6 @@ export function useSlashDropdownMenu(config?: SlashMenuConfig) {
             item.group = ""
           }
 
-          items.push(item)
-        }
-      })
-
-      aiItems.forEach((itemType) => {
-        const itemImpl = itemImplementations[itemType]
-        const itemText = texts[itemType]
-        if (itemImpl && itemText && itemImpl.check(editor)) {
-          const item: SuggestionItem = {
-            onSelect: ({ editor }) => itemImpl.action({ editor }),
-            ...itemText,
-          }
-          item.group = "hiaryAI"
           items.push(item)
         }
       })
