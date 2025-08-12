@@ -321,9 +321,9 @@ export function NotionEditorDev({ room, placeholder = "Start writing..." }: Noti
     <UserProvider>
       <AppProvider>
         <CollabProvider room={room}>
-          <AiProvider>
-            <NotionEditorContentDev placeholder={placeholder} />
-          </AiProvider>
+          {/* <AiProvider> */}
+          <NotionEditorContentDev placeholder={placeholder} />
+          {/* </AiProvider> */}
         </CollabProvider>
       </AppProvider>
     </UserProvider>
