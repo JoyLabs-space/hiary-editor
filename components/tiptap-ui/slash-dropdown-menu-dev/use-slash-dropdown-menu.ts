@@ -50,14 +50,14 @@ const texts = {
     subtext: "Generate a one-line summary of the current page",
     aliases: ["한줄", "요약", "summary", "ai", "one line summary"],
     badge: AiSparklesIcon,
-    group: "AI Functions",
+    group: "hiaryAI",
   },
   three_line_summary: {
     title: "세줄 요약",
     subtext: "Generate a three-line summary of the current page",
     aliases: ["세줄", "요약", "summary", "ai", "three line summary"],
     badge: AiSparklesIcon,
-    group: "AI Functions",
+    group: "hiaryAI",
   },
 
   img_2_math_eq: {
@@ -65,7 +65,7 @@ const texts = {
     subtext: "Convert math image to LaTeX",
     aliases: ["수식", "이미지", "변환", "math", "image", "convert"],
     badge: AiSparklesIcon,
-    group: "AI Functions",
+    group: "hiaryAI",
   },
 
   // Style
@@ -231,11 +231,8 @@ const getItemImplementations = () => {
   return {
     // AI
     one_line_summary: {
-      // DEV: Pro 의존성 제거. 텍스트 상단에 콘텐츠만 있으면 노출
-      check: (editor: Editor) => {
-        const { hasContent } = hasContentAbove(editor)
-        return hasContent
-      },
+      // DEV: 항상 노출 (배포 환경에서 조건 이슈 방지)
+      check: () => true,
       action: ({ editor }: { editor: Editor }) => {
         try {
           const payload = buildSummaryPayload(editor)
@@ -254,10 +251,8 @@ const getItemImplementations = () => {
       },
     },
     three_line_summary: {
-      check: (editor: Editor) => {
-        const { hasContent } = hasContentAbove(editor)
-        return hasContent
-      },
+      // DEV: 항상 노출 (배포 환경에서 조건 이슈 방지)
+      check: () => true,
       action: ({ editor }: { editor: Editor }) => {
         try {
           const payload = buildSummaryPayload(editor)
