@@ -25,10 +25,9 @@ import {
   isExtensionAvailable,
   isNodeInSchema,
 } from "@/lib/tiptap-utils"
-import {
-  findSelectionPosition,
-  hasContentAbove,
-} from "@/lib/tiptap-advanced-utils"
+import { hasContentAbove } from "@/lib/tiptap-advanced-utils"
+import { oneLineSummary } from "@/components/tiptap-ui/ai-actions-dev/one-line-summary/one-line-summary"
+import { threeLineSummary } from "@/components/tiptap-ui/ai-actions-dev/three-line-summary/three-line-summary"
 
 // --- Tiptap UI ---
 import type { SuggestionItem } from "@/components/tiptap-ui-utils/suggestion-menu"
@@ -46,17 +45,25 @@ export interface SlashMenuConfig {
 
 const texts = {
   // AI
-  continue_writing: {
-    title: "Continue Writing",
-    subtext: "Continue writing from the current position",
-    aliases: ["continue", "write", "continue writing", "ai"],
+  one_line_summary: {
+    title: "한줄 요약",
+    subtext: "Generate a one-line summary of the current page",
+    aliases: ["한줄", "요약", "summary", "ai", "one line summary"],
     badge: AiSparklesIcon,
     group: "AI",
   },
-  ai_ask_button: {
-    title: "Ask AI",
-    subtext: "Ask AI to generate content",
-    aliases: ["ai", "ask", "generate"],
+  three_line_summary: {
+    title: "세줄 요약",
+    subtext: "Generate a three-line summary of the current page",
+    aliases: ["세줄", "요약", "summary", "ai", "three line summary"],
+    badge: AiSparklesIcon,
+    group: "AI",
+  },
+
+  img_2_math_eq: {
+    title: "수식 이미지 변환",
+    subtext: "Convert math image to LaTeX",
+    aliases: ["수식", "이미지", "변환", "math", "image", "convert"],
     badge: AiSparklesIcon,
     group: "AI",
   },
@@ -199,57 +206,84 @@ const texts = {
 
 export type SlashMenuItemType = keyof typeof texts
 
+// Build request body for summary Lambda from current editor state
+function buildSummaryPayload(editor: Editor) {
+  const { state } = editor
+  const { doc } = state
+  const tiptapDoc = doc.toJSON() as Record<string, unknown>
+  // Try to read user id from localStorage (seeded by UserProvider)
+  let userId = "dev-user"
+  let postId = "dev-post"
+  if (typeof window !== "undefined") {
+    userId = window.localStorage.getItem("_tiptap_user_id") || userId
+    // Use pathname as postId fallback in dev
+    postId = window.location?.pathname || postId
+  }
+  return {
+    doc: tiptapDoc,
+    fetchLinks: "auto" as const,
+    links: [] as string[],
+    meta: { userId, postId },
+  }
+}
+
 const getItemImplementations = () => {
   return {
     // AI
-    continue_writing: {
+    one_line_summary: {
+      // DEV: Pro 의존성 제거. 텍스트 상단에 콘텐츠만 있으면 노출
       check: (editor: Editor) => {
         const { hasContent } = hasContentAbove(editor)
-        const extensionsReady = isExtensionAvailable(editor, [
-          "ai",
-          "aiAdvanced",
-        ])
-        return extensionsReady && hasContent
+        return hasContent
       },
       action: ({ editor }: { editor: Editor }) => {
-        const editorChain = editor.chain().focus()
-
-        const nodeSelectionPosition = findSelectionPosition({ editor })
-
-        if (nodeSelectionPosition !== null) {
-          editorChain.setNodeSelection(nodeSelectionPosition)
-        }
-
-        editorChain.run()
-
-        const chainAny = editor.chain().focus() as unknown as {
-          aiGenerationShow?: () => { run: () => boolean }
-        }
-        if (typeof chainAny.aiGenerationShow === "function") {
-          chainAny.aiGenerationShow().run()
+        try {
+          const payload = buildSummaryPayload(editor)
+          void (async () => {
+            const baseUrl =
+              (process.env.NEXT_PUBLIC_AI_SUMMARY_URL as string) ||
+              "https://lo36a3z6gcw4f6dl2s23bqmlaq0wykkh.lambda-url.ap-northeast-2.on.aws/"
+            const res = await oneLineSummary(payload, { url: baseUrl })
+            const lines = Array.isArray(res?.summary) ? res.summary : []
+            const output = lines[0] || ""
+            if (output) editor.chain().focus().insertContent(output).run()
+          })()
+        } catch (err) {
+          console.error("one_line_summary failed", err)
         }
       },
     },
-    ai_ask_button: {
-      check: (editor: Editor) =>
-        isExtensionAvailable(editor, ["ai", "aiAdvanced"]),
+    three_line_summary: {
+      check: (editor: Editor) => {
+        const { hasContent } = hasContentAbove(editor)
+        return hasContent
+      },
       action: ({ editor }: { editor: Editor }) => {
-        const editorChain = editor.chain().focus()
-
-        const nodeSelectionPosition = findSelectionPosition({ editor })
-
-        if (nodeSelectionPosition !== null) {
-          editorChain.setNodeSelection(nodeSelectionPosition)
+        try {
+          const payload = buildSummaryPayload(editor)
+          void (async () => {
+            const baseUrl =
+              (process.env.NEXT_PUBLIC_AI_SUMMARY_URL as string) ||
+              "https://lo36a3z6gcw4f6dl2s23bqmlaq0wykkh.lambda-url.ap-northeast-2.on.aws/"
+            const res = await threeLineSummary(payload, { url: baseUrl })
+            const lines = Array.isArray(res?.summary) ? res.summary : []
+            if (lines.length) {
+              editor.chain().focus().insertContent(lines.join("\n\n")).run()
+            }
+          })()
+        } catch (err) {
+          console.error("three_line_summary failed", err)
         }
-
-        editorChain.run()
-
-        const chainAny = editor.chain().focus() as unknown as {
-          aiGenerationShow?: () => { run: () => boolean }
-        }
-        if (typeof chainAny.aiGenerationShow === "function") {
-          chainAny.aiGenerationShow().run()
-        }
+      },
+    },
+    img_2_math_eq: {
+      // DEV: 항상 노출
+      check: () => true,
+      // DEV: 커스텀 이벤트로 AI 메뉴 오픈
+      action: () => {
+        try {
+          window.dispatchEvent(new Event("open-dev-ai-menu"))
+        } catch {}
       },
     },
 

@@ -10,13 +10,13 @@ import type {
   SuggestionMenuProps,
   SuggestionItem,
   SuggestionMenuRenderProps,
-} from "@/components/tiptap-ui-utils/suggestion-menu"
-import { filterSuggestionItems } from "@/components/tiptap-ui-utils/suggestion-menu"
-import { SuggestionMenu } from "@/components/tiptap-ui-utils/suggestion-menu"
+} from "@/components/tiptap-ui-utils/suggestion-menu-dev"
+import { filterSuggestionItems } from "@/components/tiptap-ui-utils/suggestion-menu-dev"
+import { SuggestionMenu } from "@/components/tiptap-ui-utils/suggestion-menu-dev"
 
 // --- Hooks ---
-import type { SlashMenuConfig } from "@/components/tiptap-ui/slash-dropdown-menu/use-slash-dropdown-menu"
-import { useSlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu/use-slash-dropdown-menu"
+import type { SlashMenuConfig } from "@/components/tiptap-ui/slash-dropdown-menu-dev/use-slash-dropdown-menu"
+import { useSlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu-dev/use-slash-dropdown-menu"
 
 // --- UI Primitives ---
 import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"

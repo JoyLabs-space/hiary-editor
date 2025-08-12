@@ -11,9 +11,9 @@ import { Separator } from "@/components/tiptap-ui-primitive/separator"
 import { ButtonGroup } from "@/components/tiptap-ui-primitive/button"
 
 // --- Styles ---
-import "@/components/tiptap-templates/notion-like/notion-like-editor-header.scss"
+import "@/components/tiptap-templates/notion-like-dev/notion-like-editor-header.scss"
 
-import { CollaborationUsers } from "@/components/tiptap-templates/notion-like/notion-like-editor-collaboration-users"
+import { CollaborationUsers } from "@/components/tiptap-templates/notion-like-dev/notion-like-editor-collaboration-users"
 
 export function NotionEditorHeader() {
   return (

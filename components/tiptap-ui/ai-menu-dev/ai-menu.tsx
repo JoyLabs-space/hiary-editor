@@ -3,46 +3,15 @@
 import * as React from "react"
 import { type Editor } from "@tiptap/react"
 
-import { AiMenuItems } from "@/components/tiptap-ui/ai-menu/ai-menu-items/ai-menu-items"
-
-// -- Hooks --
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
-import { useUiEditorState } from "@/hooks/use-ui-editor-state"
-
-// -- Utils --
-import {
-  getSelectedDOMElement,
-  selectionHasText,
-} from "@/lib/tiptap-advanced-utils"
-
-// -- Tiptap UI --
-import { AiMenuInputTextarea } from "@/components/tiptap-ui/ai-menu/ai-menu-input/ai-menu-input"
-import { AiMenuActions } from "@/components/tiptap-ui/ai-menu/ai-menu-actions/ai-menu-actions"
-
-// -- UI Primitives --
-import {
-  Menu,
-  MenuContent,
-  useFloatingMenuStore,
-} from "@/components/tiptap-ui-primitive/menu"
-import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
-import {
-  ComboboxList,
-  ComboboxPopover,
-} from "@/components/tiptap-ui-primitive/combobox"
+// 최소 UI만 사용 (프리미티브)
+import { Menu, MenuContent, useFloatingMenuStore } from "@/components/tiptap-ui-primitive/menu"
+import { ComboboxList } from "@/components/tiptap-ui-primitive/combobox"
 import { Card } from "@/components/tiptap-ui-primitive/card/card"
 
-import { getContextAndInsertAt } from "./ai-menu-utils"
-import {
-  useAiContentTracker,
-  useAiMenuState,
-  useAiMenuStateProvider,
-  useTextSelectionTracker,
-} from "./ai-menu-hooks"
+// DEV 전용 상태 훅 (프로 동작 제거)
+import { useAiMenuState, useAiMenuStateProvider } from "./ai-menu-hooks"
 
-// -- Icons --
-import { StopCircle2Icon } from "@/components/tiptap-icons/stop-circle-2-icon"
-
+// 스타일 (UI 틀만 사용)
 import "@/components/tiptap-ui/ai-menu/ai-menu.scss"
 
 export function AiMenuStateProvider({
@@ -64,270 +33,53 @@ export function AiMenuContent({
 }: {
   editor?: Editor | null
 }) {
-  const { editor } = useTiptapEditor(providedEditor)
+  // editor는 타입만 유지 (내부 기능 비활성화)
+  const editor = providedEditor ?? null
   const { state, updateState, setFallbackAnchor, reset } = useAiMenuState()
   const { show, store } = useFloatingMenuStore()
-  const { aiGenerationIsLoading, aiGenerationActive, aiGenerationHasMessage } =
-    useUiEditorState(editor)
-  const tiptapAiPromptInputRef = React.useRef<HTMLDivElement | null>(null)
-
-  const closeAiMenu = React.useCallback(() => {
-    if (!editor) return
-    reset()
-    store?.hideAll()
-    editor.commands.resetUiState()
-  }, [editor, reset, store])
-
-  const handlePromptSubmit = React.useCallback(
-    (userPrompt: string) => {
-      if (!editor || !userPrompt.trim()) return
-
-      const { context } = getContextAndInsertAt(editor)
-      // if context, add it to the user prompt
-      const promptWithContext = context
-        ? `${context}\n\n${userPrompt}`
-        : userPrompt
-
-      // Ensure fallback anchor is set before submitting
-      if (!state.fallbackAnchor.element || !state.fallbackAnchor.rect) {
-        const currentSelectedElement = getSelectedDOMElement(editor)
-        if (currentSelectedElement) {
-          const rect = currentSelectedElement.getBoundingClientRect()
-          setFallbackAnchor(currentSelectedElement, rect)
-        }
-      }
-
-      const chainAny = editor.chain() as unknown as {
-        aiTextPrompt?: (options: unknown) => { run: () => boolean }
-      }
-      if (typeof chainAny.aiTextPrompt === "function") {
-        chainAny
-          .aiTextPrompt({
-            text: promptWithContext,
-            insert: true,
-            stream: true,
-            tone: state.tone,
-            format: "rich-text",
-          })
-          .run()
-      }
-    },
-    [editor, state.tone, state.fallbackAnchor, setFallbackAnchor]
-  )
-
-  const setAnchorElement = React.useCallback(
-    (element: HTMLElement) => {
-      store.setAnchorElement(element)
-    },
-    [store]
-  )
-
-  const handleSelectionChange = React.useCallback(
-    (element: HTMLElement | null, rect: DOMRect | null) => {
+  // 최소 동작: 커스텀 이벤트로 열고 닫기 (외부에서 dispatch)
+  React.useEffect(() => {
+    const handleOpen = (e: Event) => {
+      const element = (editor?.view?.dom as HTMLElement) || document.body
+      const rect = element.getBoundingClientRect()
       setFallbackAnchor(element, rect)
-    },
-    [setFallbackAnchor]
-  )
-
-  const handleOnReject = React.useCallback(() => {
-    if (!editor) return
-    const cmds = editor.commands as unknown as {
-      aiReject?: () => void
+      updateState({ isOpen: true })
+      show(element)
     }
-    if (typeof cmds.aiReject === "function") {
-      cmds.aiReject()
+    const handleClose = (e: Event) => {
+      updateState({ isOpen: false })
+      reset()
+      store?.hideAll()
     }
-    closeAiMenu()
-  }, [closeAiMenu, editor])
-
-  const handleOnAccept = React.useCallback(() => {
-    if (!editor) return
-    const cmds = editor.commands as unknown as {
-      aiAccept?: () => void
+    window.addEventListener("open-dev-ai-menu", handleOpen)
+    window.addEventListener("close-dev-ai-menu", handleClose)
+    return () => {
+      window.removeEventListener("open-dev-ai-menu", handleOpen)
+      window.removeEventListener("close-dev-ai-menu", handleClose)
     }
-    if (typeof cmds.aiAccept === "function") {
-      cmds.aiAccept()
-    }
-    closeAiMenu()
-  }, [closeAiMenu, editor])
+  }, [editor, setFallbackAnchor, updateState, reset, show, store])
 
-  const handleInputOnClose = React.useCallback(() => {
-    if (!editor) return
-    const cmds = editor.commands as unknown as {
-      aiReject?: (options: unknown) => void
-      aiAccept?: () => void
-    }
-    if (aiGenerationIsLoading) {
-      if (typeof cmds.aiReject === "function") {
-        cmds.aiReject({ type: "reset" })
-      }
-    } else {
-      if (typeof cmds.aiAccept === "function") {
-        cmds.aiAccept()
-      }
-    }
-    closeAiMenu()
-  }, [aiGenerationIsLoading, closeAiMenu, editor])
-
-  const handleClickOutside = React.useCallback(() => {
-    if (!aiGenerationIsLoading) {
-      closeAiMenu()
-
-      if (!editor) return
-      const cmds = editor.commands as unknown as {
-        aiAccept?: () => void
-      }
-      if (typeof cmds.aiAccept === "function") {
-        cmds.aiAccept()
-      }
-    }
-  }, [aiGenerationIsLoading, closeAiMenu, editor])
-
-  useAiContentTracker({
-    editor,
-    aiGenerationActive,
-    setAnchorElement,
-    fallbackAnchor: state.fallbackAnchor,
-  })
-
-  useTextSelectionTracker({
-    editor,
-    aiGenerationActive,
-    showMenuAtElement: show,
-    setMenuVisible: (visible) => updateState({ isOpen: visible }),
-    onSelectionChange: handleSelectionChange,
-    prevent: aiGenerationIsLoading,
-  })
-
-  React.useEffect(() => {
-    if (aiGenerationIsLoading) {
-      updateState({ shouldShowInput: false })
-    }
-  }, [aiGenerationIsLoading, updateState])
-
-  React.useEffect(() => {
-    if (!aiGenerationActive && state.isOpen) {
-      closeAiMenu()
-    }
-  }, [aiGenerationActive, state.isOpen, closeAiMenu])
-
-  const smoothFocusAndScroll = (element: HTMLElement | null) => {
-    element?.focus()
-    element?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    })
-
-    // Ensure the menu back to focus after focusing on the popover
-    setTimeout(() => store.setAutoFocusOnShow(false), 0)
-    return false
-  }
-
-  const shouldShowList =
-    selectionHasText(editor) ||
-    (aiGenerationHasMessage && state.shouldShowInput && state.inputIsFocused)
-
-  if (!editor || !state.isOpen || !aiGenerationActive) {
-    return null
-  }
+  if (!state.isOpen) return null
 
   return (
     <Menu open={state.isOpen} placement="bottom-start" store={store}>
-      <MenuContent
-        onClickOutside={handleClickOutside}
-        className="tiptap-ai-menu"
-        flip={false}
-      >
+      <MenuContent className="tiptap-ai-menu" flip={false}>
         <Card>
-          {aiGenerationIsLoading && <AiMenuProgress editor={editor} />}
-
-          {!aiGenerationIsLoading && (
-            <AiMenuInputTextarea
-              ref={tiptapAiPromptInputRef}
-              showPlaceholder={
-                !aiGenerationIsLoading &&
-                aiGenerationHasMessage &&
-                !state.shouldShowInput
-              }
-              onInputFocus={() => updateState({ inputIsFocused: true })}
-              onInputBlur={() => updateState({ inputIsFocused: false })}
-              onClose={handleInputOnClose}
-              onPlaceholderClick={() => updateState({ shouldShowInput: true })}
-              onInputSubmit={(value) => handlePromptSubmit(value)}
-              onToneChange={(tone) => updateState({ tone })}
-            />
-          )}
-
-          {aiGenerationHasMessage && !aiGenerationIsLoading && (
-            <AiMenuActions
-              editor={editor}
-              options={{ tone: state.tone, format: "rich-text" }}
-              onAccept={handleOnAccept}
-              onReject={handleOnReject}
-            />
-          )}
+          <ComboboxList>
+            {/* Placeholder items only; no behavior */}
+            <button className="tiptap-button" type="button">
+              <span className="tiptap-button-text">Image to LaTeX</span>
+            </button>
+            <button className="tiptap-button" type="button">
+              <span className="tiptap-button-text">한줄 요약</span>
+            </button>
+            <button className="tiptap-button" type="button">
+              <span className="tiptap-button-text">세줄 요약</span>
+            </button>
+          </ComboboxList>
         </Card>
-
-        {!aiGenerationIsLoading && (
-          <ComboboxPopover
-            flip={false}
-            unmountOnHide
-            autoFocus={false}
-            onFocus={() => updateState({ inputIsFocused: true })}
-            autoFocusOnShow={smoothFocusAndScroll}
-            autoFocusOnHide={smoothFocusAndScroll}
-            getAnchorRect={() => {
-              return (
-                tiptapAiPromptInputRef.current?.getBoundingClientRect() || null
-              )
-            }}
-          >
-            <ComboboxList
-              style={{ display: shouldShowList ? "block" : "none" }}
-            >
-              <AiMenuItems />
-            </ComboboxList>
-          </ComboboxPopover>
-        )}
       </MenuContent>
     </Menu>
-  )
-}
-
-export function AiMenuProgress({ editor }: { editor: Editor }) {
-  const { reset } = useAiMenuState()
-
-  const handleStop = React.useCallback(() => {
-    if (!editor) return
-
-    const chainAny = editor.chain() as unknown as {
-      aiReject?: (options: unknown) => { run: () => boolean }
-    }
-    if (typeof chainAny.aiReject === "function") {
-      chainAny.aiReject({ type: "reset" }).run()
-    }
-    reset()
-    editor.commands.resetUiState()
-  }, [editor, reset])
-
-  return (
-    <div className="tiptap-ai-menu-progress">
-      <div className="tiptap-spinner-alt">
-        <span>AI is writing</span>
-        <div className="dots-container">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-        </div>
-      </div>
-
-      <ButtonGroup>
-        <Button data-style="ghost" title="Stop" onClick={handleStop}>
-          <StopCircle2Icon className="tiptap-button-icon" />
-        </Button>
-      </ButtonGroup>
-    </div>
   )
 }
 
