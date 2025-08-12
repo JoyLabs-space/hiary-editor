@@ -16,7 +16,7 @@ import { SuggestionMenu } from "@/components/tiptap-ui-utils/suggestion-menu"
 
 // --- Hooks ---
 import type { SlashMenuConfig } from "@/components/tiptap-ui/slash-dropdown-menu/use-slash-dropdown-menu"
-import { useSlashDropdownMenu } from "./use-slash-dropdown-menu-dev"
+import { useSlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu/use-slash-dropdown-menu"
 
 // --- UI Primitives ---
 import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
@@ -28,16 +28,16 @@ import {
   CardItemGroup,
 } from "@/components/tiptap-ui-primitive/card"
 
-import "@/components/tiptap-ui/slash-dropdown-menu/slash-dropdown-menu.scss"
+import "@/components/tiptap-ui/slash-dropdown-menu-dev/slash-dropdown-menu.scss"
 
-type SlashDropdownMenuDevProps = Omit<
+type SlashDropdownMenuProps = Omit<
   SuggestionMenuProps,
   "items" | "children"
 > & {
   config?: SlashMenuConfig
 }
 
-export const SlashDropdownMenuDev = (props: SlashDropdownMenuDevProps) => {
+export const SlashDropdownMenu = (props: SlashDropdownMenuProps) => {
   const { config, ...restProps } = props
   const { getSlashMenuItems } = useSlashDropdownMenu(config)
   const [isDark, setIsDark] = React.useState(false)
@@ -53,7 +53,7 @@ export const SlashDropdownMenuDev = (props: SlashDropdownMenuDevProps) => {
   return (
     <SuggestionMenu
       char="/"
-      pluginKey="slashDropdownMenuDev"
+      pluginKey="slashDropdownMenu"
       decorationClass="tiptap-slash-decoration"
       decorationContent="Filter..."
       selector="tiptap-slash-dropdown-menu"
@@ -211,5 +211,3 @@ const List = ({
     </Card>
   )
 }
-
-

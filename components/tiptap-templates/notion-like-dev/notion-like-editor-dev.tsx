@@ -37,9 +37,9 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 
 // --- Tiptap UI ---
 import { EmojiDropdownMenu } from "@/components/tiptap-ui/emoji-dropdown-menu"
-import { SlashDropdownMenuDev as SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu-dev"
+import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu-dev" // 나중에는 dev 빼야함.
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
-import { AiMenuDev as AiMenu } from "@/components/tiptap-ui/ai-menu-dev"
+import { AiMenu } from "@/components/tiptap-ui/ai-menu-dev" // 나중에는 dev 빼야함.
 import { useMathModal, MathInputModal } from "@/components/tiptap-ui/math-input-modal"
 import { PasteModal } from "@/components/tiptap-ui/paste-modal/paste-modal"
 
@@ -60,8 +60,8 @@ import "@/components/tiptap-templates/notion-like-dev/notion-like-editor-dev.scs
 import "@/components/tiptap-ui/paste-modal/paste-modal.scss";
 
 // --- Content ---
-import { MobileToolbar } from "@/components/tiptap-templates/notion-like/notion-like-editor-mobile-toolbar"
-import { NotionToolbarFloating } from "@/components/tiptap-templates/notion-like/notion-like-editor-toolbar-floating"
+import { MobileToolbar } from "@/components/tiptap-templates/notion-like-dev/notion-like-editor-mobile-toolbar"
+import { NotionToolbarFloating } from "@/components/tiptap-templates/notion-like-dev/notion-like-editor-toolbar-floating"
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { lowlight } from 'lowlight'
 import "highlight.js/styles/stackoverflow-dark.min.css";
