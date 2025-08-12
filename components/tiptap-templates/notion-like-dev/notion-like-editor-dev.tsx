@@ -197,7 +197,35 @@ export function EditorContentAreaDev() {
         <DragContextMenu />
         <AiMenu />
         <EmojiDropdownMenu />
-        <SlashDropdownMenu />
+        <SlashDropdownMenu
+          config={{
+            enabledItems: [
+              // AI (DEV)
+              "one_line_summary",
+              "three_line_summary",
+              "img_2_math_eq",
+              // Common
+              "text",
+              "heading_1",
+              "heading_2",
+              "heading_3",
+              "bullet_list",
+              "ordered_list",
+              "task_list",
+              "quote",
+              "code_block",
+              "mention",
+              "emoji",
+              "divider",
+              "inline_math",
+              "block_math",
+              "table",
+              "table_add_row",
+              "image",
+            ],
+            showGroups: true,
+          }}
+        />
         <NotionToolbarFloating />
         <CodeBlockLanguageDropdown editor={editor} />
         <TableHoverControls editor={editor} />
