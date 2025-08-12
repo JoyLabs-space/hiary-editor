@@ -39,7 +39,7 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 import { EmojiDropdownMenu } from "@/components/tiptap-ui/emoji-dropdown-menu"
 import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu-dev" // 나중에는 dev 빼야함.
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
-import { AiMenu } from "@/components/tiptap-ui/ai-menu-dev/ai-menu" // 나중에는 dev 빼야함.
+// import { AiMenu } from "@/components/tiptap-ui/ai-menu-dev/ai-menu" // 나중에는 dev 빼야함.
 import { useMathModal, MathInputModal } from "@/components/tiptap-ui/math-input-modal"
 import { PasteModal } from "@/components/tiptap-ui/paste-modal/paste-modal"
 
@@ -55,6 +55,7 @@ import { useAi } from "@/contexts/ai-context"
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 import Paragraph from '@tiptap/extension-paragraph'
 import { CodeBlockLanguageDropdown } from "@/components/tiptap-ui/code-block-language-dropdown/CodeBlockLanguageDropdown"
+import { imageToLatex } from "@/components/tiptap-ui/ai-actions-dev/image-to-latex/image-to-latex"
 import { TableKit } from '@tiptap/extension-table'
 
 // --- Styles ---
@@ -93,6 +94,7 @@ import swift from "highlight.js/lib/languages/swift";
 import kotlin from "highlight.js/lib/languages/kotlin";
 import { TapIndent } from "@/components/tiptap-ui/tap-indent/tap-indent"
 import { TableHoverControls } from "@/components/tiptap-ui/table-hover-controls/table-hover-controls"
+import { ImageUploadFloatDev } from "@/components/tiptap-ui/image-upload-float-dev"
 
 lowlight.registerLanguage("css", css);
 lowlight.registerLanguage("js", js);
@@ -183,6 +185,43 @@ export function EditorContentAreaDev() {
     }
   }, [aiGenerationHasMessage, aiGenerationIsLoading, aiGenerationIsSelection, editor])
 
+  // DEV: listen OCR result and replace imageUpload node with math node
+  React.useEffect(() => {
+    if (!editor) return
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ latex: string }>
+      const latex = (ev.detail?.latex || "").trim()
+      if (!latex) return
+      const isBlock = latex.startsWith("\\begin")
+
+      let imageUploadPos: number | null = null
+      editor.state.doc.descendants((node, pos) => {
+        if (imageUploadPos !== null) return false
+        if (node.type.name === "imageUpload") {
+          imageUploadPos = pos
+          return false
+        }
+        return true
+      })
+
+      const content = isBlock
+        ? { type: "mathBlock", attrs: { latex } }
+        : { type: "mathInline", attrs: { latex } }
+
+      editor.chain().focus()
+        .command(({ tr }) => {
+          if (imageUploadPos !== null) {
+            tr.delete(imageUploadPos, imageUploadPos + 1)
+          }
+          return true
+        })
+        .insertContentAt(imageUploadPos ?? editor.state.selection.from, content)
+        .run()
+    }
+    window.addEventListener("hiary-dev-ocr-result", handler as EventListener)
+    return () => window.removeEventListener("hiary-dev-ocr-result", handler as EventListener)
+  }, [editor])
+
   if (!editor) return null
 
   return (
@@ -197,7 +236,8 @@ export function EditorContentAreaDev() {
       >
         <MobileToolbar />
         <DragContextMenu />
-        <AiMenu />
+        {/* <AiMenu /> */}
+        <ImageUploadFloatDev editor={editor} />
         <EmojiDropdownMenu />
         <SlashDropdownMenu
           config={{
@@ -284,8 +324,41 @@ export function EditorProviderDev(props: EditorProviderProps) {
     ImageUploadNode.configure({
       accept: "image/*",
       maxSize: MAX_FILE_SIZE,
-      limit: 3,
-      upload: handleImageUpload,
+      limit: 1,
+      upload: async (file: File) => {
+        try {
+          const arrayBuffer = await file.arrayBuffer()
+          const bytes = new Uint8Array(arrayBuffer)
+          let binary = ""
+          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+          const base64 = btoa(binary)
+          const mime = file.type || "application/octet-stream"
+          const dataUrl = `data:${mime};base64,${base64}`
+          const userId =
+            (typeof window !== "undefined" && window.localStorage.getItem("_tiptap_user_id")) ||
+            "dev-user"
+
+          const res = await imageToLatex({
+            imageBase64: dataUrl,
+            imageContentType: mime,
+            fileName: file.name,
+            userId,
+          })
+          const raw = res?.mathpixRaw as Record<string, unknown> | undefined
+          const rawLatexStyled = typeof raw?.latex_styled === 'string' ? raw?.latex_styled : ''
+          const rawLatex = typeof raw?.latex === 'string' ? raw?.latex : ''
+          const rawText = typeof raw?.text === 'string' ? raw?.text : ''
+          const math = (rawLatexStyled || rawLatex || rawText).trim()
+          if (math) {
+            window.dispatchEvent(new CustomEvent("hiary-dev-ocr-result", { detail: { latex: math } }))
+          }
+        } catch (err) {
+          console.error("Image OCR failed", err)
+        }
+        // returning empty string triggers upload error state inside node view
+        // which is fine because we replace the node ourselves
+        return ""
+      },
       onError: (error) => console.error("Upload failed:", error),
     }),
     UniqueID,

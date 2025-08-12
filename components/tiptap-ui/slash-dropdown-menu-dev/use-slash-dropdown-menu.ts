@@ -279,10 +279,10 @@ const getItemImplementations = () => {
     img_2_math_eq: {
       // DEV: 항상 노출
       check: () => true,
-      // DEV: 커스텀 이벤트로 AI 메뉴 오픈
+      // DEV: 떠다니는 이미지 업로더 오픈 (AiMenu 아님)
       action: () => {
         try {
-          window.dispatchEvent(new Event("open-dev-ai-menu"))
+          window.dispatchEvent(new Event("open-dev-ai-menu-image-to-latex"))
         } catch {}
       },
     },
