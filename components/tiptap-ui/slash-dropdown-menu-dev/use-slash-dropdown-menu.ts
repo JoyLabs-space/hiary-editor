@@ -50,14 +50,14 @@ const texts = {
     subtext: "Generate a one-line summary of the current page",
     aliases: ["한줄", "요약", "summary", "ai", "one line summary"],
     badge: AiSparklesIcon,
-    group: "AI",
+    group: "AI Functions",
   },
   three_line_summary: {
     title: "세줄 요약",
     subtext: "Generate a three-line summary of the current page",
     aliases: ["세줄", "요약", "summary", "ai", "three line summary"],
     badge: AiSparklesIcon,
-    group: "AI",
+    group: "AI Functions",
   },
 
   img_2_math_eq: {
@@ -65,7 +65,7 @@ const texts = {
     subtext: "Convert math image to LaTeX",
     aliases: ["수식", "이미지", "변환", "math", "image", "convert"],
     badge: AiSparklesIcon,
-    group: "AI",
+    group: "AI Functions",
   },
 
   // Style
