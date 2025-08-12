@@ -202,11 +202,10 @@ export function EditorContentAreaDev() {
         <SlashDropdownMenu
           config={{
             enabledItems: [
-              // AI (DEV)
-              "one_line_summary",
-              "three_line_summary",
-              "img_2_math_eq",
-              "hiaryAI",
+              // // AI (DEV)
+              // "one_line_summary",
+              // "three_line_summary",
+              // "img_2_math_eq",
               // Common
               "text",
               "heading_1",

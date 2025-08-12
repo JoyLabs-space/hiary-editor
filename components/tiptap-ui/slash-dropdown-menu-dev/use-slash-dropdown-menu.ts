@@ -473,6 +473,11 @@ export function useSlashDropdownMenu(config?: SlashMenuConfig) {
         "table_add_row",
         "image",
       ]
+      const aiItems: SlashMenuItemType[] = [
+        "one_line_summary",
+        "three_line_summary",
+        "img_2_math_eq",
+      ]
 
       const enabledItems = config?.enabledItems || defaultItems
       const showGroups = config?.showGroups !== false
@@ -503,29 +508,42 @@ export function useSlashDropdownMenu(config?: SlashMenuConfig) {
         }
       })
 
-      const three_line_summaryImpl = itemImplementations["three_line_summary"]
-      const one_line_summaryImpl = itemImplementations["one_line_summary"]
-      const img_2_math_eqImpl = itemImplementations["img_2_math_eq"]
-      const three_line_summaryText = texts["three_line_summary"]
-      const one_line_summaryText = texts["one_line_summary"]
-      const img_2_math_eqText = texts["img_2_math_eq"]
+      aiItems.forEach((itemType) => {
+        const itemImpl = itemImplementations[itemType]
+        const itemText = texts[itemType]
+        if (itemImpl && itemText && itemImpl.check(editor)) {
+          const item: SuggestionItem = {
+            onSelect: ({ editor }) => itemImpl.action({ editor }),
+            ...itemText,
+          }
+          item.group = "hiaryAI"
+          items.push(item)
+        }
+      })
+
+      // const three_line_summaryImpl = itemImplementations["three_line_summary"]
+      // const one_line_summaryImpl = itemImplementations["one_line_summary"]
+      // const img_2_math_eqImpl = itemImplementations["img_2_math_eq"]
+      // const three_line_summaryText = texts["three_line_summary"]
+      // const one_line_summaryText = texts["one_line_summary"]
+      // const img_2_math_eqText = texts["img_2_math_eq"]
       
-      if (three_line_summaryImpl && three_line_summaryText && three_line_summaryImpl.check(editor)) {
-        const item: SuggestionItem = {
-          onSelect: ({ editor }) => three_line_summaryImpl.action({ editor }),
-          ...three_line_summaryText,
-        }
-        item.group = "hiaryAI"
-        items.push(item)
-      }
-      if (one_line_summaryImpl && one_line_summaryText && one_line_summaryImpl.check(editor)) {
-        const item: SuggestionItem = {
-          onSelect: ({ editor }) => one_line_summaryImpl.action({ editor }),
-          ...one_line_summaryText,
-        }
-        item.group = "hiaryAI"
-        items.push(item)
-      }
+      // if (three_line_summaryImpl && three_line_summaryText && three_line_summaryImpl.check(editor)) {
+      //   const item: SuggestionItem = {
+      //     onSelect: ({ editor }) => three_line_summaryImpl.action({ editor }),
+      //     ...three_line_summaryText,
+      //   }
+      //   item.group = "hiaryAI"
+      //   items.push(item)
+      // }
+      // if (one_line_summaryImpl && one_line_summaryText && one_line_summaryImpl.check(editor)) {
+      //   const item: SuggestionItem = {
+      //     onSelect: ({ editor }) => one_line_summaryImpl.action({ editor }),
+      //     ...one_line_summaryText,
+      //   }
+      //   item.group = "hiaryAI"
+      //   items.push(item)
+      // }
       // if (img_2_math_eqImpl && img_2_math_eqText && img_2_math_eqImpl.check(editor)) {
       //   const item: SuggestionItem = {
       //     onSelect: ({ editor }) => img_2_math_eqImpl.action({ editor }),
