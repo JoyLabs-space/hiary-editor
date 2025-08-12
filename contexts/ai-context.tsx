@@ -24,18 +24,19 @@ export const useAi = (): AiContextValue => {
 
 export const useAiToken = () => {
   const [aiToken, setAiToken] = React.useState<string | null>(null)
-  const [hasAi, setHasAi] = React.useState<boolean>(false)
+  const [hasAi, setHasAi] = React.useState<boolean>(true)
 
   React.useEffect(() => {
-    const enableAiParam = getUrlParam("enableAi")
-    setHasAi(parseInt(enableAiParam || "0") === 1)
+    // const enableAiParam = getUrlParam("enableAi")
+    // console.log("enableAiParam", enableAiParam)
+    setHasAi(true)
   }, [])
 
   React.useEffect(() => {
     if (!hasAi) return
 
     const getToken = async () => {
-      const token = await fetchAiToken()
+      const token = "hiary-ai-not-using-tiptap-collab"
       setAiToken(token)
     }
 
