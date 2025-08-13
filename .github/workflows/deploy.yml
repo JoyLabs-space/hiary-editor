@@ -12,6 +12,8 @@ env:
   # 프로젝트에 맞게 조정 가능
   BUILD_COMMAND: npm ci && npm run build
   BUILD_DIR: out
+  # CloudFront distribution (set in repo secrets)
+  # CLOUDFRONT_DISTRIBUTION_ID: <set via secrets>
 
 jobs:
   deploy:
@@ -27,7 +29,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Build
@@ -49,5 +51,23 @@ jobs:
 
       - name: Sync to S3
         run: aws s3 sync ${{ env.BUILD_DIR }} s3://${{ env.S3_BUCKET }} --delete
+
+      - name: Ensure no-cache for HTML (fast propagation)
+        run: |
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive \
+            --exclude "*" --include "*.html" \
+            --metadata-directive REPLACE \
+            --cache-control "public, max-age=0, must-revalidate"
+
+      - name: Invalidate CloudFront cache
+        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        uses: aws-actions/amazon-cloudfront-invalidation@v2
+        with:
+          distribution-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          paths: |
+            /index.html
+            /notion-like/index.html
+            /*
 
 
