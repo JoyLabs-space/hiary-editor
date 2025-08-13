@@ -64,12 +64,9 @@ jobs:
 
       - name: Invalidate CloudFront cache
         if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        uses: aws-actions/amazon-cloudfront-invalidation@v2
-        with:
-          distribution-id: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}
-          paths: |
-            /index.html
-            /notion-like/index.html
-            /*
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/index.html" "/notion-like/index.html" "/*"
 
 
