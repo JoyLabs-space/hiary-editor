@@ -36,6 +36,12 @@ export interface ImageUploadNodeOptions {
    * Callback for successful uploads.
    */
   onSuccess?: (url: string) => void
+  /**
+   * Behavior mode for this upload node. If set to 'ocrToLatex', the node will
+   * collect an image file from the user and downstream logic will handle OCR → LaTeX
+   * insertion instead of inserting images.
+   */
+  mode?: string
 }
 
 declare module "@tiptap/react" {
@@ -80,6 +86,9 @@ export const ImageUploadNode = Node.create<ImageUploadNodeOptions>({
       },
       maxSize: {
         default: this.options.maxSize,
+      },
+      mode: {
+        default: this.options.mode ?? "",
       },
     }
   },

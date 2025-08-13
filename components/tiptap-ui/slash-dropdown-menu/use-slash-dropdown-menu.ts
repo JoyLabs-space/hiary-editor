@@ -35,6 +35,11 @@ import type { SuggestionItem } from "@/components/tiptap-ui-utils/suggestion-men
 import { addEmojiTrigger } from "@/components/tiptap-ui/emoji-trigger-button"
 import { addMentionTrigger } from "@/components/tiptap-ui/mention-trigger-button"
 
+// --- hiaryAI Actions ---
+import { imageToLatex } from "@/components/tiptap-ui/ai-action/image-to-latex"
+import { threeLineSummary } from "@/components/tiptap-ui/ai-action/three-line-summary"
+import { oneLineSummary } from "@/components/tiptap-ui/ai-action/one-line-summary"
+
 export interface SlashMenuConfig {
   enabledItems?: SlashMenuItemType[]
   customItems?: SuggestionItem[]
@@ -45,6 +50,28 @@ export interface SlashMenuConfig {
 }
 
 const texts = {
+  // hiaryAI (keep at top to prioritize in menu ordering)
+  hiaryai_image_to_latex: {
+    title: "Image → LaTeX",
+    subtext: "이미지를 인식하여 LaTeX로 변환",
+    aliases: ["image", "latex", "ocr", "mathpix", "hiaryAI"],
+    badge: AiSparklesIcon,
+    group: "hiaryAI",
+  },
+  hiaryai_three_line_summary: {
+    title: "Three-line Summary",
+    subtext: "문서를 세 줄로 요약",
+    aliases: ["summary", "three", "3", "lines", "hiaryAI"],
+    badge: AiSparklesIcon,
+    group: "hiaryAI",
+  },
+  hiaryai_one_line_summary: {
+    title: "One-line Summary",
+    subtext: "문서를 한 줄로 요약",
+    aliases: ["summary", "one", "1", "line", "hiaryAI"],
+    badge: AiSparklesIcon,
+    group: "hiaryAI",
+  },
   // AI
   continue_writing: {
     title: "Continue Writing",
@@ -201,6 +228,170 @@ export type SlashMenuItemType = keyof typeof texts
 
 const getItemImplementations = () => {
   return {
+    // hiaryAI
+    hiaryai_image_to_latex: {
+      check: () => true,
+      action: ({ editor }: { editor: Editor }) => {
+        try {
+          // 1) 이미지 업로드 패널 노드 삽입 (드롭/클릭 업로드 지원)
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: "imageUpload",
+              attrs: {
+                accept: "image/*",
+                limit: 1,
+                mode: "ocrToLatex",
+              },
+            })
+            .run()
+
+          // 2) 업로드 노드에서 실제 파일 선택/드롭이 완료되면
+          //    image-upload-node.tsx가 이미지 업로드를 수행하고 이미지 노드를 삽입하도록 되어있으나,
+          //    OCR→LaTeX 플로우에선 업로드 대신 클라이언트에서 base64를 바로 보내어 OCR 호출.
+          //    여기서는 간단히 파일 선택 다이얼로그를 띄워 OCR만 진행하고, 결과를 수식으로 삽입한다.
+
+          const input = document.createElement("input")
+          input.type = "file"
+          input.accept = "image/*"
+          input.style.position = "fixed"
+          input.style.left = "-9999px"
+          document.body.appendChild(input)
+          input.onchange = () => {
+            const file = input.files?.[0]
+            document.body.removeChild(input)
+            if (!file) return
+
+            const reader = new FileReader()
+            reader.onload = async () => {
+              try {
+                const base64 = String(reader.result || "")
+                const userId =
+                  window.localStorage.getItem("_tiptap_user_id") || "anonymous"
+
+                const response = await imageToLatex({
+                  imageBase64: base64,
+                  imageContentType: file.type || undefined,
+                  fileName: file.name || undefined,
+                  userId,
+                })
+
+                type MathpixRaw = {
+                  latex_styled?: string
+                  latex?: string
+                  text?: string
+                }
+                type MathpixResponse = { mathpixRaw?: MathpixRaw }
+                const raw: MathpixRaw = (response as MathpixResponse).mathpixRaw || {}
+                const latexRaw = raw.latex_styled || raw.latex || raw.text || ""
+
+                const latex: string = String(latexRaw || "").trim()
+                if (latex) {
+                  const isBlock = /^\\begin\{[\s\S]+?\}/.test(latex)
+                   const hasMathExt = Boolean(
+                     isExtensionAvailable(editor, ["Mathematics"]) ||
+                     editor.schema.nodes["inlineMath"] || editor.schema.nodes["blockMath"]
+                   )
+
+                  if (hasMathExt && isBlock) {
+                    // Block math
+                    editor.chain().focus().insertContent({ type: "blockMath", attrs: { latex } }).run()
+                  } else if (hasMathExt) {
+                    // Inline math
+                    editor.chain().focus().insertContent({ type: "inlineMath", attrs: { latex } }).run()
+                  } else {
+                    // 확장 없으면 텍스트로 폴백
+                    editor.chain().focus().insertContent({
+                      type: "paragraph",
+                      content: [{ type: "text", text: latex }],
+                    }).run()
+                  }
+                } else {
+                  editor.chain().focus().insertContent({
+                    type: "paragraph",
+                    content: [
+                      { type: "text", text: "LaTeX 추출 결과가 없습니다." },
+                    ],
+                  }).run()
+                }
+              } catch (err) {
+                console.error("imageToLatex failed", err)
+              }
+            }
+            reader.readAsDataURL(file)
+          }
+          input.click()
+        } catch (error) {
+          console.error("Failed to start Image→LaTeX flow", error)
+        }
+      },
+    },
+    hiaryai_three_line_summary: {
+      check: () => true,
+      action: ({ editor }: { editor: Editor }) => {
+        ;(async () => {
+          try {
+            const doc = editor.getJSON()
+            const params = new URLSearchParams(window.location.search)
+            const userId =
+              window.localStorage.getItem("_tiptap_user_id") || "anonymous"
+            const postId =
+              params.get("postId") || window.location.pathname || "post"
+
+            const res = await threeLineSummary({
+              doc,
+              meta: { userId, postId },
+            })
+
+            const lines = Array.isArray(res.summary) ? res.summary : []
+            if (lines.length > 0) {
+              const content = lines.map((line) => ({
+                type: "paragraph",
+                content: [{ type: "text", text: String(line) }],
+              }))
+              editor.chain().focus().insertContent(content).run()
+            }
+          } catch (err) {
+            console.error("threeLineSummary failed", err)
+          }
+        })()
+      },
+    },
+    hiaryai_one_line_summary: {
+      check: () => true,
+      action: ({ editor }: { editor: Editor }) => {
+        ;(async () => {
+          try {
+            const doc = editor.getJSON()
+            const params = new URLSearchParams(window.location.search)
+            const userId =
+              window.localStorage.getItem("_tiptap_user_id") || "anonymous"
+            const postId =
+              params.get("postId") || window.location.pathname || "post"
+
+            const res = await oneLineSummary({
+              doc,
+              meta: { userId, postId },
+            })
+
+            const text = Array.isArray(res.summary) ? res.summary[0] : null
+            if (text) {
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: "paragraph",
+                  content: [{ type: "text", text: String(text) }],
+                })
+                .run()
+            }
+          } catch (err) {
+            console.error("oneLineSummary failed", err)
+          }
+        })()
+      },
+    },
     // AI
     continue_writing: {
       check: (editor: Editor) => {
