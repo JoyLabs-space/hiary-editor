@@ -25,7 +25,7 @@ export async function threeLineSummary(
 ): Promise<ThreeLineSummaryResponse> {
   const baseUrl = options?.url || process.env.NEXT_PUBLIC_AI_SUMMARY_URL || "https://lo36a3z6gcw4f6dl2s23bqmlaq0wykkh.lambda-url.ap-northeast-2.on.aws/"
   const url = baseUrl.includes("?") ? `${baseUrl}&mode=3` : `${baseUrl}?mode=3`
-  const apiKey = options?.apiKey || process.env.NEXT_PUBLIC_AI_API_KEY || null
+  const apiKey = options?.apiKey || process.env.NEXT_PUBLIC_AI_API_KEY || "anthropic.claude-sonnet-4-20250514-v1:0"
   return await callLambdaJson<ThreeLineSummaryResponse>({
     url,
     apiKey,
