@@ -54,13 +54,66 @@ jobs:
       - name: Sync to S3
         run: aws s3 sync ${{ env.BUILD_DIR }} s3://${{ env.S3_BUCKET }} --delete
 
-      - name: Ensure no-cache for HTML (fast propagation)
+      - name: Fix common Content-Types and HTML cache headers
         run: |
+          # HTML: set correct content-type and no-cache for fast propagation
           aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
-            --recursive \
-            --exclude "*" --include "*.html" \
+            --recursive --exclude "*" --include "*.html" \
             --metadata-directive REPLACE \
-            --cache-control "public, max-age=0, must-revalidate"
+            --cache-control "public, max-age=0, must-revalidate" \
+            --content-type "text/html"
+
+          # CSS
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.css" \
+            --metadata-directive REPLACE \
+            --content-type "text/css" || true
+
+          # JavaScript
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.js" \
+            --metadata-directive REPLACE \
+            --content-type "application/javascript" || true
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.mjs" \
+            --metadata-directive REPLACE \
+            --content-type "application/javascript" || true
+
+          # Source maps
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.map" \
+            --metadata-directive REPLACE \
+            --content-type "application/json" || true
+
+          # JSON & manifest
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.json" \
+            --metadata-directive REPLACE \
+            --content-type "application/json" || true
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.webmanifest" \
+            --metadata-directive REPLACE \
+            --content-type "application/manifest+json" || true
+
+          # SVG
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.svg" \
+            --metadata-directive REPLACE \
+            --content-type "image/svg+xml" || true
+
+          # Fonts
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.woff2" \
+            --metadata-directive REPLACE \
+            --content-type "font/woff2" || true
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.woff" \
+            --metadata-directive REPLACE \
+            --content-type "font/woff" || true
+          aws s3 cp s3://${{ env.S3_BUCKET }} s3://${{ env.S3_BUCKET }} \
+            --recursive --exclude "*" --include "*.ttf" \
+            --metadata-directive REPLACE \
+            --content-type "font/ttf" || true
 
       - name: Invalidate CloudFront cache
         if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
