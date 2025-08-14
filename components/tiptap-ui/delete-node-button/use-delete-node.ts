@@ -39,6 +39,15 @@ export interface UseDeleteNodeConfig {
 export function canDeleteNode(editor: Editor | null): boolean {
   if (!editor || !editor.isEditable) return false
 
+  // If selection is inside a table, allow delete
+  if (
+    editor.isActive("table") ||
+    editor.isActive("tableCell") ||
+    editor.isActive("tableHeader")
+  ) {
+    return true
+  }
+
   const { state } = editor
   const { selection } = state
 
@@ -86,6 +95,20 @@ export function deleteNode(editor: Editor | null): boolean {
   if (!editor || !editor.isEditable) return false
 
   try {
+    // If inside a table, delete the whole table first
+    if (
+      editor.isActive("table") ||
+      editor.isActive("tableCell") ||
+      editor.isActive("tableHeader")
+    ) {
+      const chain = editor.chain().focus() as unknown as {
+        deleteTable?: () => { run: () => boolean }
+      }
+      if (chain.deleteTable) {
+        return chain.deleteTable().run()
+      }
+    }
+
     const { state } = editor
     const { selection } = state
 

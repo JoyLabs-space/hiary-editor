@@ -19,6 +19,7 @@ import { TypeIcon } from "@/components/tiptap-icons/type-icon"
 import { AtSignIcon } from "@/components/tiptap-icons/at-sign-icon"
 import { SmilePlusIcon } from "@/components/tiptap-icons/smile-plus-icon"
 import { FunctionSquareIcon } from "@/components/tiptap-icons/function-square-icon"
+import { TableIcon } from "@/components/tiptap-icons/table-icon"
 
 // --- Lib ---
 import {
@@ -193,7 +194,7 @@ const texts = {
     title: "테이블",
     subtext: "3x3 테이블 삽입",
     aliases: ["TableKit"],
-    badge: FunctionSquareIcon,
+    badge: TableIcon,
     group: "Insert",
   },
 
