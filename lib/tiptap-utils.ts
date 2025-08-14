@@ -262,14 +262,42 @@ export const handleImageUpload = async (
     )
   }
 
-  // 데모/로컬 환경: 실제 업로드 대신 즉시 Blob URL을 반환하여 미리보기를 보여줍니다.
-  // 프로덕션에서는 이 부분을 실제 업로드 로직으로 교체하고, 업로드 후 공개 URL을 반환하세요.
+  // base64 데이터 URL로 변환하여 저장
   if (abortSignal?.aborted) {
     throw new Error("Upload cancelled")
   }
-  const objectUrl = URL.createObjectURL(file)
-  onProgress?.({ progress: 100 })
-  return objectUrl
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+
+    const handleAbort = () => {
+      try {
+        reader.abort()
+      } catch {}
+      reject(new Error("Upload cancelled"))
+    }
+
+    if (abortSignal) {
+      abortSignal.addEventListener("abort", handleAbort, { once: true })
+    }
+
+    reader.onload = () => {
+      if (abortSignal) {
+        abortSignal.removeEventListener("abort", handleAbort)
+      }
+      onProgress?.({ progress: 100 })
+      resolve(reader.result as string)
+    }
+
+    reader.onerror = () => {
+      if (abortSignal) {
+        abortSignal.removeEventListener("abort", handleAbort)
+      }
+      reject(new Error("Failed to read file"))
+    }
+
+    reader.readAsDataURL(file)
+  })
 }
 
 type ProtocolOptions = {

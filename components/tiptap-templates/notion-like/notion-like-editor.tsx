@@ -307,6 +307,10 @@ export function EditorContentArea() {
           case 'change-color': {
             const isDark = event.data.color === 'dark'
             document.body.classList.toggle('code-dark', isDark)
+            document.body.classList.toggle('dark', isDark)
+            if (typeof document !== 'undefined') {
+              document.documentElement.classList.toggle('dark', isDark)
+            }
             console.log(isDark)
             break;
           }
@@ -440,7 +444,7 @@ export function EditorProvider(props: EditorProviderProps) {
     TaskItem.configure({ nested: true }),
     Highlight.configure({ multicolor: true }),
     Selection,
-    Image,
+    Image.configure({ allowBase64: true }),
     ImageUploadNode.configure({
       accept: "image/*",
       maxSize: MAX_FILE_SIZE,
