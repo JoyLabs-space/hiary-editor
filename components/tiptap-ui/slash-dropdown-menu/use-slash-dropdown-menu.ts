@@ -349,7 +349,7 @@ const getItemImplementations = () => {
             if (lines.length > 0) {
               const content = lines.map((line) => ({
                 type: "paragraph",
-                content: [{ type: "text", text: String(line) }],
+                content: [{ type: (line.startsWith("#") ? "heading 1" : "text"), text: String(line) }],
               }))
               editor.chain().focus().insertContent(content).run()
             }
@@ -383,7 +383,7 @@ const getItemImplementations = () => {
                 .focus()
                 .insertContent({
                   type: "paragraph",
-                  content: [{ type: "text", text: String(text) }],
+                  content: [{ type: (text.startsWith("#") ? "heading 1" : "text"), text: String(text) }],
                 })
                 .run()
             }
