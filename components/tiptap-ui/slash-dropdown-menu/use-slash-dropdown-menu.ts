@@ -355,7 +355,7 @@ const getItemImplementations = () => {
               };
               
               // 나머지 줄들을 blockquote로 삽입
-              const blockquoteContents = lines.slice(1).map(line => ({
+              const blockquoteContents = lines.map(line => ({
                 type: "blockquote",
                 content: [{
                   type: "paragraph",
@@ -399,7 +399,7 @@ const getItemImplementations = () => {
               };
               
               // 나머지 줄들을 blockquote로 삽입
-              const blockquoteContents = lines.slice(1).map(line => ({
+              const blockquoteContents = lines.map(line => ({
                 type: "blockquote",
                 content: [{
                   type: "paragraph",
