@@ -346,15 +346,12 @@ const getItemImplementations = () => {
             })
 
             const lines = Array.isArray(res.summary) ? res.summary : [];
-            if (lines.length > 0) {
-              // 첫번째 줄에서 시작하는 해시태그(#)를 제거한 후, trim 처리
-              const firstLineText = String(lines[0]).replace(/^#\s*/, "").trim();
-              
+            if (lines.length > 0) {              
               // 첫번째 줄을 heading으로 삽입
               const headingContent = {
                 type: "heading",
                 attrs: { level: 1 },
-                content: [{ type: "text", text: firstLineText }]
+                content: [{ type: "text", text: "세 줄 요약" }]
               };
               
               // 나머지 줄들을 blockquote로 삽입
@@ -394,14 +391,11 @@ const getItemImplementations = () => {
 
             const lines = Array.isArray(res.summary) ? res.summary : [];
             if (lines.length > 0) {
-              // 첫번째 줄에서 시작하는 해시태그(#)를 제거한 후, trim 처리
-              const firstLineText = String(lines[0]).replace(/^#\s*/, "").trim();
-              
               // 첫번째 줄을 heading으로 삽입
               const headingContent = {
                 type: "heading",
                 attrs: { level: 1 },
-                content: [{ type: "text", text: firstLineText }]
+                content: [{ type: "text", text: "한 줄 요약" }]
               };
               
               // 나머지 줄들을 blockquote로 삽입
