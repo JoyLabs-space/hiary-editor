@@ -345,13 +345,24 @@ const getItemImplementations = () => {
               meta: { userId, postId },
             })
 
-            const lines = Array.isArray(res.summary) ? res.summary : []
+            const lines = Array.isArray(res.summary) ? res.summary : [];
             if (lines.length > 0) {
-              const content = lines.map((line) => ({
-                type: "paragraph",
-                content: [{ type: (line.startsWith("#") ? "heading 1" : "text"), text: String(line) }],
-              }))
-              editor.chain().focus().insertContent(content).run()
+              // 첫번째 줄에서 시작하는 해시태그(#)를 제거한 후, trim 처리
+              const firstLineText = String(lines[0]).replace(/^#\s*/, "");
+              // 첫번째 줄은 나중에 toggleHeading을 이용하기 위해 paragraph로 삽입하고,
+              // 나머지 줄은 그대로 quote 타입으로 삽입
+              const content = [
+                { 
+                  type: "paragraph", 
+                  content: [{ type: "text", text: firstLineText }] 
+                },
+                ...lines.slice(1).map(line => ({
+                  type: "quote",
+                  content: [{ type: "text", text: String(line) }]
+                }))
+              ];
+              editor.chain().focus().insertContent(content).run();
+              editor.chain().focus().toggleHeading({ level: 1 }).run();
             }
           } catch (err) {
             console.error("threeLineSummary failed", err)
@@ -376,16 +387,24 @@ const getItemImplementations = () => {
               meta: { userId, postId },
             })
 
-            const text = Array.isArray(res.summary) ? res.summary[0] : null
-            if (text) {
-              editor
-                .chain()
-                .focus()
-                .insertContent({
-                  type: "paragraph",
-                  content: [{ type: (text.startsWith("#") ? "heading 1" : "text"), text: String(text) }],
-                })
-                .run()
+            const lines = Array.isArray(res.summary) ? res.summary : [];
+            if (lines.length > 0) {
+              // 첫번째 줄에서 시작하는 해시태그(#)를 제거한 후, trim 처리
+              const firstLineText = String(lines[0]).replace(/^#\s*/, "");
+              // 첫번째 줄은 나중에 toggleHeading을 이용하기 위해 paragraph로 삽입하고,
+              // 나머지 줄은 그대로 quote 타입으로 삽입
+              const content = [
+                { 
+                  type: "paragraph", 
+                  content: [{ type: "text", text: firstLineText }] 
+                },
+                ...lines.slice(1).map(line => ({
+                  type: "quote",
+                  content: [{ type: "text", text: String(line) }]
+                }))
+              ];
+              editor.chain().focus().insertContent(content).run();
+              editor.chain().focus().toggleHeading({ level: 1 }).run();
             }
           } catch (err) {
             console.error("oneLineSummary failed", err)
